@@ -1,3 +1,12 @@
+<!--
+GitHub Pages용 Supabase 실시간 공동 순위표.
+필수: Supabase Dashboard > Authentication > Providers > Anonymous Sign-ins 활성화.
+Supabase 프로젝트: ai-school-quiz / quiz_leaderboard.
+기존 QR코드를 유지하려면 GitHub Pages의 기존 HTML 파일명/경로로 업로드하세요.
+학생 ID는 화면에서만 입력하며 데이터베이스에는 저장하지 않습니다.
+주의: 학생이 직접 계산한 점수이므로 조작 방지는 서버 검증이 별도로 필요합니다.
+-->
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -194,6 +203,7 @@
 <div class="quiz-card" id="main-card">
     <div id="combo-badge" class="combo-badge">🔥 2연속 정답! 콤보 보너스!</div>
 
+    <div id="cloud-status" class="hidden"></div>
     <!-- Start & Student Input Screen -->
     <div id="start-screen" class="text-center py-2">
         <div class="text-6xl mb-3">🤖</div>
@@ -308,9 +318,7 @@
         </div>
 
         <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
-            <button onclick="showAdminResetModal()" class="text-xs font-extrabold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg transition-all flex items-center gap-1.5">
-                <i class="fa-solid fa-trash-can"></i> 기록 초기화 (교사용)
-            </button>
+            <span class="text-xs font-bold text-slate-500">동일 학번 최고 점수만 반영</span>
             <button onclick="hideLeaderboardModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold rounded-xl text-sm transition-all">
                 닫기
             </button>
@@ -318,156 +326,66 @@
     </div>
 </div>
 
-<!-- Admin Reset Password Modal -->
-<div id="admin-reset-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border-2 border-red-200">
-        <div class="text-center mb-4">
-            <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-2">
-                🔒
-            </div>
-            <h3 class="text-lg font-black text-slate-800">교사용 랭킹 초기화</h3>
-            <p class="text-xs font-bold text-slate-500 mt-1">저장된 모든 학생의 퀴즈 기록을 삭제합니다.<br>암호를 입력하세요. (기본: 1800)</p>
-        </div>
-        <form onsubmit="handleAdminReset(event)" class="space-y-4">
-            <div>
-                <input type="password" id="admin-password" required placeholder="관리자 비밀번호 입력"
-                       class="w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 focus:border-red-500 focus:outline-none font-bold text-slate-800 text-center">
-            </div>
-            <div id="admin-error-msg" class="text-xs font-extrabold text-red-600 text-center hidden">
-                비밀번호가 일치하지 않습니다.
-            </div>
-            <div class="flex gap-2">
-                <button type="button" onclick="hideAdminResetModal()" class="w-1/2 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold rounded-xl text-sm">
-                    취소
-                </button>
-                <button type="submit" id="reset-submit-btn" class="w-1/2 py-2.5 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl text-sm shadow-md">
-                    전체 초기화
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'ai-speed-quiz';
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-        apiKey: "demo-api-key",
-        authDomain: "demo-app.firebaseapp.com",
-        projectId: "demo-app",
-        storageBucket: "demo-app.appspot.com",
-        messagingSenderId: "123456789",
-        appId: "1:123456789:web:123456789"
+    // Supabase Dashboard > Authentication > Providers > Anonymous Sign-ins 를 활성화하세요.
+    // GitHub Pages의 기존 HTML 파일명과 경로를 유지하면 QR코드는 그대로 사용 가능합니다.
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
+    const supabase = createClient(
+        "https://hgfsgeeppaywanjegglj.supabase.co",
+        "sb_publishable_EHs4d1xTTAOyVpK5ggyuwA_UE-hL5Sg"
+    );
+    const statusMessage = document.getElementById('cloud-status');
+    const setStatus = (message, error = false) => {
+        if (!statusMessage) return;
+        statusMessage.textContent = message;
+        statusMessage.className = `text-center text-sm font-bold mb-3 ${error ? 'text-red-600' : 'text-blue-700'}`;
+        statusMessage.classList.remove('hidden');
     };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    let currentUser = null;
-
-    async function initAuth() {
-        try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                const cred = await signInWithCustomToken(auth, __initial_auth_token);
-                currentUser = cred.user;
-            } else {
-                const cred = await signInAnonymously(auth);
-                currentUser = cred.user;
-            }
-        } catch (err) {
-            console.error("Auth Error:", err);
-        }
-    }
-    initAuth();
-
-    window.saveScoreToCloud = async function(studentId, nickname, score) {
-        if (!currentUser) {
-            try {
-                const cred = await signInAnonymously(auth);
-                currentUser = cred.user;
-            } catch (e) {
-                console.error("Authentication failed before save", e);
-                return;
-            }
-        }
-
-        try {
-            const leaderboardRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
-            await addDoc(leaderboardRef, {
-                studentId: studentId,
-                nickname: nickname,
-                score: score,
-                timestamp: Date.now(),
-                userId: currentUser.uid
-            });
-        } catch (e) {
-            console.error("Error saving score to Firestore:", e);
-        }
+    let realtimeChannel = null;
+    const authReady = (async () => {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (sessionData.session?.user) return sessionData.session.user;
+        const { data, error } = await supabase.auth.signInAnonymously();
+        if (error) throw error;
+        return data.user;
+    })().catch(error => {
+        console.error('Supabase anonymous login failed:', error);
+        setStatus('Supabase 익명 로그인이 필요합니다. Authentication > Providers에서 Anonymous Sign-ins를 켜주세요.', true);
+        return null;
+    });
+    window.saveScoreToCloud = async (_studentId, nickname, score) => {
+        const user = await authReady;
+        if (!user) throw new Error('Supabase 익명 로그인 실패');
+        const { data: existing, error: readError } = await supabase.from('quiz_leaderboard')
+            .select('score').eq('user_id', user.id).maybeSingle();
+        if (readError) throw readError;
+        if (existing && existing.score >= score) return;
+        const { error } = await supabase.from('quiz_leaderboard').upsert({
+            user_id: user.id, nickname: String(nickname).trim().slice(0,20), score,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+        if (error) throw error;
     };
-
-    window.fetchLeaderboardFromCloud = async function() {
-        if (!currentUser) {
-            try {
-                const cred = await signInAnonymously(auth);
-                currentUser = cred.user;
-            } catch (e) {
-                console.error("Auth failed for leaderboard fetch", e);
-            }
-        }
-
-        try {
-            const leaderboardRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
-            const snapshot = await getDocs(leaderboardRef);
-
-            let records = [];
-            snapshot.forEach(doc => {
-                records.push(doc.data());
-            });
-
-            records.sort((a, b) => {
-                if (b.score !== a.score) {
-                    return b.score - a.score;
-                }
-                return (a.timestamp || 0) - (b.timestamp || 0);
-            });
-
-            return records;
-        } catch (e) {
-            console.error("Error fetching leaderboard:", e);
-            return [];
-        }
+    window.watchLeaderboard = async (onRecords, onError) => {
+        const user = await authReady;
+        if (!user) { onError('Supabase 익명 로그인 설정을 확인해주세요.'); return; }
+        if (realtimeChannel) { await supabase.removeChannel(realtimeChannel); realtimeChannel = null; }
+        const fetchScores = async () => {
+            const { data, error } = await supabase.from('quiz_leaderboard')
+                .select('nickname,score,updated_at').order('score',{ascending:false})
+                .order('updated_at',{ascending:true}).limit(1000);
+            if (error) { console.error(error); onError('순위표를 불러오지 못했습니다: ' + error.message); return; }
+            onRecords(data || []);
+        };
+        await fetchScores();
+        realtimeChannel = supabase.channel('school-quiz-live-' + Math.random().toString(36).slice(2))
+            .on('postgres_changes', {event:'*',schema:'public',table:'quiz_leaderboard'}, fetchScores)
+            .subscribe(status => { if (status === 'CHANNEL_ERROR') onError('실시간 연결 오류: 페이지를 새로고침해 주세요.'); });
     };
-
-    window.clearLeaderboardInCloud = async function() {
-        if (!currentUser) {
-            try {
-                const cred = await signInAnonymously(auth);
-                currentUser = cred.user;
-            } catch (e) {
-                console.error("Auth failed for leaderboard reset", e);
-                return false;
-            }
-        }
-
-        try {
-            const leaderboardRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
-            const snapshot = await getDocs(leaderboardRef);
-
-            const deletePromises = [];
-            snapshot.forEach(docSnap => {
-                deletePromises.push(deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', docSnap.id)));
-            });
-
-            await Promise.all(deletePromises);
-            return true;
-        } catch (e) {
-            console.error("Error clearing leaderboard from Firestore:", e);
-            return false;
-        }
+    window.stopLeaderboardWatch = () => {
+        if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+        realtimeChannel = null;
     };
 </script>
 
@@ -852,11 +770,16 @@
         const savingStatus = document.getElementById('saving-status');
         savingStatus.classList.remove('hidden');
 
-        if (window.saveScoreToCloud) {
+        try {
+            if (!window.saveScoreToCloud) throw new Error('저장 기능을 불러오지 못했습니다.');
             await window.saveScoreToCloud(studentId, studentNickname, score);
+            savingStatus.textContent = '✅ 순위표에 저장되었습니다!';
+            savingStatus.classList.remove('text-red-600');
+        } catch (err) {
+            console.error(err);
+            savingStatus.textContent = '⚠️ 저장 실패: Supabase 익명 로그인 및 인터넷 연결을 확인해주세요.';
+            savingStatus.classList.add('text-red-600');
         }
-
-        savingStatus.classList.add('hidden');
     }
 
     function restartQuiz() {
@@ -876,8 +799,8 @@
             </div>
         `;
 
-        if (window.fetchLeaderboardFromCloud) {
-            const records = await window.fetchLeaderboardFromCloud();
+        if (window.watchLeaderboard) {
+            await window.watchLeaderboard((records) => {
 
             if (!records || records.length === 0) {
                 listEl.innerHTML = `
@@ -914,59 +837,23 @@
                         </span>
                         <div>
                             <div class="text-sm font-black text-slate-800">${escapeHtml(rec.nickname)}</div>
-                            <div class="text-xs font-bold text-slate-400">학번: ${escapeHtml(rec.studentId)}</div>
+                            <div class="text-xs font-bold text-slate-400">AI 퀴즈 참가자</div>
                         </div>
                     </div>
                     <div class="text-lg font-black text-blue-600">${rec.score}점</div>
                 `;
                 listEl.appendChild(item);
             });
+            }, (message) => {
+                listEl.textContent = message;
+                listEl.className = 'text-center text-red-600 font-bold py-8';
+            });
         }
     }
 
     function hideLeaderboardModal() {
         document.getElementById('leaderboard-modal').classList.add('hidden');
-    }
-
-    function showAdminResetModal() {
-        document.getElementById('admin-password').value = '';
-        document.getElementById('admin-error-msg').classList.add('hidden');
-        document.getElementById('admin-reset-modal').classList.remove('hidden');
-    }
-
-    function hideAdminResetModal() {
-        document.getElementById('admin-reset-modal').classList.add('hidden');
-    }
-
-    async function handleAdminReset(e) {
-        e.preventDefault();
-        const pwdInput = document.getElementById('admin-password').value;
-        const errorMsg = document.getElementById('admin-error-msg');
-        const submitBtn = document.getElementById('reset-submit-btn');
-
-        // Teacher password updated to 1800
-        if (pwdInput !== '1800') {
-            errorMsg.classList.remove('hidden');
-            return;
-        }
-
-        errorMsg.classList.add('hidden');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 삭제 중...';
-
-        if (window.clearLeaderboardInCloud) {
-            const success = await window.clearLeaderboardInCloud();
-            if (success) {
-                hideAdminResetModal();
-                showLeaderboardModal();
-            } else {
-                errorMsg.textContent = '초기화 중 오류가 발생했습니다.';
-                errorMsg.classList.remove('hidden');
-            }
-        }
-
-        submitBtn.disabled = false;
-        submitBtn.textContent = '전체 초기화';
+        if (window.stopLeaderboardWatch) window.stopLeaderboardWatch();
     }
 
     function escapeHtml(str) {
@@ -983,9 +870,6 @@
     window.restartQuiz = restartQuiz;
     window.showLeaderboardModal = showLeaderboardModal;
     window.hideLeaderboardModal = hideLeaderboardModal;
-    window.showAdminResetModal = showAdminResetModal;
-    window.hideAdminResetModal = hideAdminResetModal;
-    window.handleAdminReset = handleAdminReset;
 </script>
 </body>
 </html>
