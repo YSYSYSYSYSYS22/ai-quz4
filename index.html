@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<!-- saved from url=(0064)file:///Users/yuyeonseo/Downloads/gemini-code-1791858848603.html -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI중점고 점심시간 스피드 AI 상식 퀴즈</title>
+    <style>
+        :root {
+            --primary-color: #3B82F6;
+            --primary-dark: #1D4ED8;
+            --bg-color: #EEF2FF; /* 부드럽고 고급스러운 연보라-블루 파스텔 배경 */
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A; /* 진한 딥 네이비로 시독성 최고화 */
+            --text-sub: #334155;
+            --correct-color: #059669;
+            --correct-bg: #D1FAE5;
+            --wrong-color: #DC2626;
+            --wrong-bg: #FEE2E2;
+            --combo-color: #EA580C;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#C7D2FE 1.5px, transparent 1.5px);
+            background-size: 24px 24px; /* 은은한 도트 패턴 추가 */
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .quiz-card {
+            background-color: var(--card-bg);
+            border-radius: 28px;
+            width: 100%;
+            max-width: 720px;
+            padding: 36px;
+            box-shadow: 0 20px 30px -10px rgba(79, 70, 229, 0.15), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
+            border: 3px solid #C7D2FE;
+            position: relative;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* 마스코트 파트 */
+        .mascot-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background-color: #F1F5F9;
+            border-radius: 20px;
+            padding: 14px 22px;
+            margin-bottom: 22px;
+            border: 2px solid #E2E8F0;
+        }
+
+        .mascot-avatar {
+            font-size: 2.3rem;
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        .mascot-speech {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+        }
+
+        /* 콤보 피드백 유아이 */
+        .combo-badge {
+            display: none;
+            position: absolute;
+            top: -18px;
+            right: 36px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: white;
+            padding: 8px 22px;
+            border-radius: 30px;
+            font-size: 1.05rem;
+            font-weight: 900;
+            box-shadow: 0 4px 14px rgba(234, 88, 12, 0.4);
+            animation: bounceIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        /* 헤더 스타일 */
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .badge {
+            background-color: #E0E7FF;
+            color: #3730A3;
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            border: 1px solid #A5B4FC;
+        }
+
+        .score-display {
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: var(--primary-dark);
+        }
+
+        /* 프로그레스 바 */
+        .progress-container {
+            width: 100%;
+            height: 14px;
+            background-color: #E2E8F0;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4F46E5, #2563EB);
+            width: 0%;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 문제 텍스트 */
+        .question-title {
+            font-size: 1.35rem;
+            line-height: 1.6;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 22px;
+            word-break: keep-all;
+        }
+
+        /* 보기 그리드 */
+        .options-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .option-button {
+            background-color: #F8FAFC;
+            color: var(--text-main);
+            border: 2px solid #CBD5E1;
+            padding: 16px 22px;
+            border-radius: 16px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .option-button:hover:not(:disabled) {
+            background-color: #EEF2FF;
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
+        /* 정답 / 오답 버튼 스타일 */
+        .option-button.correct {
+            background-color: var(--correct-bg) !important;
+            border-color: var(--correct-color) !important;
+            color: #065F46 !important;
+            font-weight: 800;
+        }
+
+        .option-button.wrong {
+            background-color: var(--wrong-bg) !important;
+            border-color: var(--wrong-color) !important;
+            color: #991B1B !important;
+            font-weight: 800;
+        }
+
+        /* 해설 박스 */
+        .explanation-card {
+            margin-top: 22px;
+            padding: 20px 22px;
+            background-color: #FEFCE8;
+            border: 2px solid #FDE047;
+            border-radius: 16px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .explanation-header {
+            font-size: 1.1rem;
+            font-weight: 900;
+            color: #854D0E;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .explanation-body {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #1E293B;
+            font-weight: 700;
+            word-break: keep-all;
+        }
+
+        /* 다음 문제 버튼 */
+        .next-btn {
+            margin-top: 22px;
+            width: 100%;
+            padding: 18px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 1.15rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: none;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .next-btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        /* 애니메이션 효과 */
+        .shake-animation {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+            border-color: var(--wrong-color) !important;
+        }
+
+        .correct-animation {
+            animation: bounce 0.4s ease;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-3px, 0, 0); }
+            20%, 80% { transform: translate3d(6px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+            40%, 60% { transform: translate3d(8px, 0, 0); }
+        }
+
+        @keyframes bounce {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 시작 & 결과 화면 */
+        .center-screen {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .main-title {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--primary-dark);
+            margin-bottom: 16px;
+        }
+
+        .sub-title {
+            font-size: 1.1rem;
+            color: var(--text-sub);
+            margin-bottom: 32px;
+            line-height: 1.6;
+            font-weight: 600;
+        }
+
+        .primary-btn {
+            padding: 18px 48px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+            transition: all 0.2s;
+        }
+
+        .primary-btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .final-score {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: var(--primary-dark);
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-card" id="main-card">
+    <div id="combo-badge" class="combo-badge">🔥 2연속 정답! 콤보 보너스!</div>
+
+    <!-- 시작 화면 -->
+    <div id="start-screen" class="center-screen">
+        <div style="font-size: 4rem; margin-bottom: 10px;">🤖</div>
+        <div class="main-title">AI중점고 AI 상식 퀴즈</div>
+        <div class="sub-title">점심시간 스피드 AI 상식 퀴즈 게임!<br>총 20문제를 풀고 최고 점수에 도전해 보세요.</div>
+        <button class="primary-btn" onclick="startQuiz()">퀴즈 시작하기 🚀</button>
+    </div>
+
+    <!-- 퀴즈 게임 화면 -->
+    <div id="quiz-screen" style="display: none;">
+        <!-- 마스코트 반응 유아이 -->
+        <div class="mascot-container">
+            <div id="mascot-avatar" class="mascot-avatar">🤖</div>
+            <div id="mascot-speech" class="mascot-speech">준비되셨나요? 같이 풀어봐요!</div>
+        </div>
+
+        <div class="quiz-header">
+            <span id="badge" class="badge">1구간</span>
+            <div id="score-display" class="score-display">점수: 0점</div>
+        </div>
+        <div class="progress-container">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        <div id="question-title" class="question-title">문제 설명 영역</div>
+        <div id="options-list" class="options-list"></div>
+
+        <!-- 해설 카드 -->
+        <div id="explanation-card" class="explanation-card">
+            <div class="explanation-header">💡 해설 &amp; 단어 풀이</div>
+            <div id="explanation-body" class="explanation-body">해설 내용</div>
+        </div>
+
+        <button id="next-btn" class="next-btn" onclick="nextQuestion()">다음 문제로 ➔</button>
+    </div>
+
+    <!-- 결과 화면 -->
+    <div id="result-screen" class="center-screen" style="display: none;">
+        <div class="main-title">🎉 퀴즈 종료!</div>
+        <div class="sub-title">당신의 최종 점수는?</div>
+        <div id="final-score" class="final-score">0점</div>
+        <div id="result-comment" class="sub-title">수고하셨습니다!</div>
+        <button class="primary-btn" onclick="restartQuiz()">다시 도전하기 🔄</button>
+    </div>
+</div>
+
+<script>
+    // Web Audio API를 활용한 효과음 재생기
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSound(type) {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'correct') {
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        } else if (type === 'combo') {
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.08);
+            osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.16);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        } else {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(110, audioCtx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        }
+    }
+
+    // 최종 20개 퀴즈 데이터셋 (Q9 AI 탈옥 1안 반영 완료)
+    const quizData = [
+        {
+            section: "1구간 : 기본 개념",
+            question: "Q1. 최근 ChatGPT, Claude 등 AI에게 원하는 결과를 얻기 위해 입력하는 명령어나 지시문을 무엇이라고 할까요?",
+            options: ["1) 알고리즘", "2) 프롬프트", "3) 파라미터", "4) 소스코드"],
+            answer: 1,
+            explanation: "연극에서 배우에게 대사 힌트를 주듯, AI에게 방향을 집어주는 지시문을 '프롬프트'라고 부릅니다."
+        },
+        {
+            section: "1구간 : 기본 개념",
+            question: "Q2. AI가 없는 사실을 마치 진짜인 것처럼 거짓말로 지어내서 답하는 현상을 무엇이라고 할까요?",
+            options: ["1) 환각 (할루시네이션)", "2) 오버클럭", "3) 버그", "4) 렉 (Lag)"],
+            answer: 0,
+            explanation: "AI가 확률적으로 가장 그럴듯한 단어를 연결하다가 진짜처럼 보이는 창작 거짓말을 해버리는 현상입니다."
+        },
+        {
+            section: "1구간 : 기본 개념",
+            question: "Q3. 인터넷의 수많은 정보 중에서 진짜 뉴스나 가치 있는 정보를 골라내고 요약해 전달하는 기술 및 과정을 뜻하는 말은?",
+            options: ["1) 큐레이션 (Curation)", "2) 필터링 (Filtering)", "3) 스크래핑 (Scraping)", "4) 파싱 (Parsing)"],
+            answer: 0,
+            explanation: "미술관 큐레이터가 작품을 선별하듯, AI가 사용자에게 맞춤형 정보를 골라주는 행위입니다."
+        },
+        {
+            section: "1구간 : 기본 개념",
+            question: "Q4. 컴퓨터나 AI가 카메라 영상 및 이미지를 분석하여 객체를 인식하고 구분해내는 컴퓨터 과학 분야 기술은?",
+            options: ["1) NLP (자연어 처리)", "2) Computer Vision (컴퓨터 비전)", "3) Speech Recognition (음성 인식)", "4) Data Mining (데이터 마이닝)"],
+            answer: 1,
+            explanation: "인간의 '눈' 역할을 AI에게 부여하는 기술로, 자율주행차나 불량품 검사 시스템에 핵심적으로 쓰입니다."
+        },
+        {
+            section: "1구간 : 기본 개념",
+            question: "Q5. 웹사이트에 있는 정보들을 AI가 자동 프로그램(봇)으로 긁어모아 수집하는 행위를 무엇이라 할까요?",
+            options: ["1) 데이터 크롤링 / 스크래핑", "2) 데이터 업로드", "3) 데이터 인코딩", "4) 데이터 백업"],
+            answer: 0,
+            explanation: "거미(Spider)가 줄을 타듯 인터넷 웹페이지들을 돌아다니며 대량의 데이터를 수집해 오는 기술입니다."
+        },
+        {
+            section: "2구간 : 밈 & 최신 기술",
+            question: "Q6. 인터넷이나 Wi-Fi 연결 없이, 스마트폰이나 노트북 기기 자체에 탑재된 AI 칩으로 빠르게 연산을 처리하는 방식을 무엇이라고 부를까요?",
+            options: ["1) 온디바이스 AI (On-Device AI)", "2) 클라우드 AI", "3) 메타버스 AI", "4) 웹 AI"],
+            answer: 0,
+            explanation: "외부 서버로 데이터를 보내지 않고 기기(Device) 내부에서 AI가 직접 연산하여 빠른 속도와 뛰어난 보안성을 자랑합니다."
+        },
+        {
+            section: "2구간 : 밈 & 최신 기술",
+            question: "Q7. 2016년 바둑으로 이세돌 9단을 이겨서 세계를 흔들었던 '알파고(AlphaGo)'를 만든 구글의 AI 연구소 이름은?",
+            options: ["1) OpenAI", "2) DeepMind (딥마인드)", "3) Meta AI", "4) Anthropic"],
+            answer: 1,
+            explanation: "구글 딥마인드는 알파고뿐만 아니라 단백질 구조를 예측하는 '알파폴드' 등을 개발한 AI 연구소입니다."
+        },
+        {
+            section: "2구간 : 밈 & 최신 기술",
+            question: "Q8. 벽 건너편 대화 상대가 사람인지 AI인지 구별하지 못하면 '이 AI는 지능이 있다'고 인정하는 유명한 테스트는?",
+            options: ["1) 페르미 테스트", "2) 튜링 테스트", "3) 스피드 테스트", "4) IQ 테스트"],
+            answer: 1,
+            explanation: "컴퓨터 과학의 아버지 '앨런 튜링'이 1950년에 제안한 인공지능 판별 시험입니다."
+        },
+        {
+            section: "2구간 : 밈 & 최신 기술",
+            question: "Q9. 교묘하거나 우회적인 질문을 던져 AI에 설정된 윤리적 제한이나 보안 가이드라인을 뚫고 금지된 답변을 받아내는 공격 행위는?",
+            options: ["1) 탈옥 (Jailbreaking)", "2) 오버클럭 (Overclocking)", "3) 디소스 (Desourcing)", "4) 스크래핑 (Scraping)"],
+            answer: 0,
+            explanation: "스마트폰 보안 제한을 해제하는 '탈옥'에서 온 용어로, 교묘한 질문으로 AI 보안 가이드라인을 푸는 행위입니다."
+        },
+        {
+            section: "2구간 : 밈 & 최신 기술",
+            question: "Q10. AI가 글을 읽고 이해할 때 잘라서 처리하는 '최소한의 글자 조각 단위'이자 요금의 기준이 되는 용어는?",
+            options: ["1) 픽셀", "2) 토큰", "3) 바이트", "4) 코드"],
+            answer: 1,
+            explanation: "AI는 문장을 한 번에 읽지 않고 '토큰'이라는 작은 글자 조각 단위로 분할하여 처리합니다."
+        },
+        {
+            section: "3구간 : AI 핵심 개념 & 상식",
+            question: "Q11. '인공지능', '머신러닝', '딥러닝'의 올바른 포함 관계(범위)는 무엇일까요?",
+            options: [
+                "1) 딥러닝 ⊂ 머신러닝 ⊂ 인공지능",
+                "2) 머신러닝 ⊂ 딥러닝 ⊂ 인공지능",
+                "3) 인공지능 ⊂ 머신러닝 ⊂ 딥러닝",
+                "4) 셋은 전혀 다른 별개의 개념이다."
+            ],
+            answer: 0,
+            explanation: "인공지능(AI)이라는 커다란 울타리 안에 머신러닝이 있고, 그 머신러닝의 한 종류가 딥러닝입니다."
+        },
+        {
+            section: "3구간 : AI 핵심 개념 & 상식",
+            question: "Q12. 사람이 직접 정답을 가르쳐주지 않아도, AI 스스로 비슷한 데이터끼리 묶거나 특징을 찾는 학습 방식은?",
+            options: ["1) 지도 학습", "2) 비지도 학습", "3) 강화 학습", "4) 벼락치기 학습"],
+            answer: 1,
+            explanation: "비지도 학습(Unsupervised Learning): 정답지 없이 AI 혼자서 데이터의 패턴과 특징을 분류합니다."
+        },
+        {
+            section: "3구간 : AI 핵심 개념 & 상식",
+            question: "Q13. ChatGPT에서 'GPT'의 알파벳 약자를 올바르게 풀어쓴 것은 무엇일까요?",
+            options: [
+                "1) Generative Pre-trained Transformer",
+                "2) General Program Tool",
+                "3) Global Process Technology",
+                "4) Graphic Processing Terminal"
+            ],
+            answer: 0,
+            explanation: "Generative(생성하는) - Pre-trained(미리 학습된) - Transformer(트랜스포머 알고리즘 구조)의 약자입니다."
+        },
+        {
+            section: "3구간 : AI 핵심 개념 & 상식",
+            question: "Q14. AI가 학습 데이터에만 너무 과하게 적응해서, 새로운 실전 문제에서는 오히려 오답을 내는 현상은?",
+            options: ["1) 오버피팅 (과적합)", "2) 언더피팅 (미달)", "3) 딥러닝", "4) 다운로드"],
+            answer: 0,
+            explanation: "기출문제 답만 달달 외워서 변형 문제는 다 틀려버리는 상태를 '오버피팅'이라고 합니다."
+        },
+        {
+            section: "3구간 : AI 핵심 개념 & 상식",
+            question: "Q15. AI 기술로 실제 인물이나 캐릭터의 목소리를 학습시켜 다른 노래를 부르게 만드는 인기 숏폼 콘텐츠 기술은?",
+            options: [
+                "1) AI 커버 (AI Cover)",
+                "2) AI 스피치 (AI Speech)",
+                "3) AI 리믹스 (AI Remix)",
+                "4) AI 더빙 (AI Dubbing)"
+            ],
+            answer: 0,
+            explanation: "유명인이나 캐릭터의 목소리 데이터를 학습시켜 새로운 노래를 부르게 만드는 'AI 커버' 기술입니다."
+        },
+        {
+            section: "4구간 : 기업 & SF 서브컬처 & 칩셋",
+            question: "Q16. AI 가속기와 GPU 시장을 휩쓸고 있으며, AI 시대의 황제라 불리는 글로벌 반도체 기업은?",
+            options: ["1) 엔비디아 (NVIDIA)", "2) Intel", "3) AMD", "4) Apple"],
+            answer: 0,
+            explanation: "엔비디아(NVIDIA)는 AI 학습용 핵심 반도체 칩셋 시장을 독점하다시피 하고 있습니다."
+        },
+        {
+            section: "4구간 : 기업 & SF 서브컬처 & 칩셋",
+            question: "Q17. ChatGPT를 만들어 전 세계에 AI 열풍을 일으킨 미국의 AI 연구소 회사 이름은?",
+            options: ["1) Google", "2) OpenAI", "3) Meta", "4) Microsoft"],
+            answer: 1,
+            explanation: "OpenAI는 샘 올트먼이 대표로 있으며 GPT-4, DALL-E, Sora 등을 개발한 생성형 AI 기업입니다."
+        },
+        {
+            section: "4구간 : 기업 & SF 서브컬처 & 칩셋",
+            question: "Q18. 스마트폰이나 최신 PC에 탑재되어 'AI 신경망 연산'을 전용으로 빠르게 처리하는 칩셋의 이름은?",
+            options: ["1) NPU (신경망 처리 장치)", "2) HDD (하드디스크)", "3) Power Unit", "4) Sound Card"],
+            answer: 0,
+            explanation: "NPU(Neural Processing Unit): 사람 뇌의 신경망처럼 복잡한 연산을 효율적으로 구동하는 AI 전용 칩입니다."
+        },
+        {
+            section: "4구간 : 기업 & SF 서브컬처 & 칩셋",
+            question: "Q19. SF 영화/애니메이션에 등장하는 AI 연결 중 잘못된 것은 무엇일까요?",
+            options: [
+                "1) 영화 <어벤져스> - 울트론 (Ultron)",
+                "2) 영화 <인터스텔라> - 타스 (TARS)",
+                "3) 영화 <매트릭스> - 스카이넷 (Skynet)",
+                "4) 애니 <아이언맨> - 프라이데이 (FRIDAY)"
+            ],
+            answer: 2,
+            explanation: "인류를 멸망시키려 한 AI '스카이넷(Skynet)'은 영화 <터미네이터> 시리즈의 메인 빌런 AI입니다."
+        },
+        {
+            section: "4구간 : 기업 & SF 서브컬처 & 칩셋",
+            question: "Q20. 기업 '엔비디아(NVIDIA)'의 유래인 라틴어 단어 'Invidia'의 원래 뜻은 무엇일까요?",
+            options: ["1) 번개", "2) 부러움 / 질투", "3) 최고 / 승리", "4) 초록빛 산"],
+            answer: 1,
+            explanation: "'남들이 질투하고 부러워할 제품을 만들겠다'는 의도로 라틴어 Invidia(질투)에서 이름을 지었습니다."
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let combo = 0;
+    let answered = false;
+
+    function startQuiz() {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('quiz-screen').style.display = 'block';
+        currentQuestionIndex = 0;
+        score = 0;
+        combo = 0;
+        showQuestion();
+    }
+
+    function showQuestion() {
+        answered = false;
+        const mainCard = document.getElementById('main-card');
+        mainCard.classList.remove('shake-animation', 'correct-animation');
+
+        const currentQuiz = quizData[currentQuestionIndex];
+        
+        document.getElementById('badge').innerText = currentQuiz.section;
+        document.getElementById('score-display').innerText = `점수: ${score}점`;
+        document.getElementById('progress-bar').style.width = `${((currentQuestionIndex + 1) / quizData.length) * 100}%`;
+        
+        document.getElementById('question-title').innerText = currentQuiz.question;
+        
+        document.getElementById('mascot-avatar').innerText = '🤖';
+        document.getElementById('mascot-speech').innerText = '신중하게 정답을 맞춰보세요!';
+
+        const optionsContainer = document.getElementById('options-list');
+        optionsContainer.innerHTML = '';
+        
+        currentQuiz.options.forEach((option, index) => {
+            const button = document.createElement('button');
+            button.className = 'option-button';
+            button.innerText = option;
+            button.onclick = () => selectOption(index);
+            optionsContainer.appendChild(button);
+        });
+
+        document.getElementById('explanation-card').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'none';
+    }
+
+    function selectOption(selectedIndex) {
+        if (answered) return;
+        answered = true;
+
+        const currentQuiz = quizData[currentQuestionIndex];
+        const buttons = document.querySelectorAll('.option-button');
+        const mainCard = document.getElementById('main-card');
+        const comboBadge = document.getElementById('combo-badge');
+
+        buttons.forEach(btn => btn.disabled = true);
+
+        if (selectedIndex === currentQuiz.answer) {
+            combo++;
+            score += 5;
+            buttons[selectedIndex].classList.add('correct');
+            mainCard.classList.add('correct-animation');
+            
+            document.getElementById('mascot-avatar').innerText = '🥳';
+            document.getElementById('mascot-speech').innerText = combo >= 2 ? `대단해요! ${combo}연속 정답!` : '정답입니다! 완벽해요!';
+
+            if (combo >= 2) {
+                comboBadge.innerText = `🔥 ${combo}연속 정답! 콤보 폭발!`;
+                comboBadge.style.display = 'block';
+                playSound('combo');
+            } else {
+                playSound('correct');
+            }
+
+            document.getElementById('score-display').innerText = `점수: ${score}점`;
+        } else {
+            combo = 0;
+            comboBadge.style.display = 'none';
+            buttons[selectedIndex].classList.add('wrong');
+            buttons[currentQuiz.answer].classList.add('correct');
+            mainCard.classList.add('shake-animation');
+            
+            document.getElementById('mascot-avatar').innerText = '😭';
+            document.getElementById('mascot-speech').innerText = '우우우~ 삐-! 오답이에요! 삐리릭...';
+            
+            playSound('wrong');
+        }
+
+        document.getElementById('explanation-body').innerText = currentQuiz.explanation;
+        document.getElementById('explanation-card').style.display = 'block';
+        document.getElementById('next-btn').style.display = 'block';
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < quizData.length) {
+            showQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('combo-badge').style.display = 'none';
+        document.getElementById('final-score').innerText = `${score} / 100점`;
+
+        let comment = "";
+        if (score === 100) comment = "🏆 완벽합니다! 당신은 AI 마스터!";
+        else if (score >= 80) comment = "🎉 대단해요! AI중점고의 인재군요!";
+        else if (score >= 50) comment = "👍 준수한 상식! 조금만 더 공부하면 전문가!";
+        else comment = "🌱 AI와 조금 더 친해져 볼까요? 수고하셨습니다!";
+
+        document.getElementById('result-comment').innerText = comment;
+    }
+
+    function restartQuiz() {
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'block';
+    }
+</script>
+
+
+</body></html>
