@@ -353,7 +353,6 @@
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Global variables provided by environment or default setup
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'ai-speed-quiz';
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
         apiKey: "demo-api-key",
@@ -370,7 +369,6 @@
 
     let currentUser = null;
 
-    // Initialize Firebase Auth
     async function initAuth() {
         try {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -386,8 +384,7 @@
     }
     initAuth();
 
-    // Expose DB function to window scope for saving score
-    window.saveScoreToCloud = async function(studentId, nickname, score, totalTime) {
+    window.saveScoreToCloud = async function(studentId, nickname, score) {
         if (!currentUser) {
             try {
                 const cred = await signInAnonymously(auth);
@@ -399,7 +396,6 @@
         }
 
         try {
-            // RULE 1: Correct Firestore collection path
             const leaderboardRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
             await addDoc(leaderboardRef, {
                 studentId: studentId,
@@ -413,7 +409,6 @@
         }
     };
 
-    // Expose DB function to window scope for reading leaderboard
     window.fetchLeaderboardFromCloud = async function() {
         if (!currentUser) {
             try {
@@ -425,7 +420,6 @@
         }
 
         try {
-            // RULE 1 & RULE 2: Simple collection query, fetch all and sort in JavaScript memory
             const leaderboardRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
             const snapshot = await getDocs(leaderboardRef);
 
@@ -434,7 +428,6 @@
                 records.push(doc.data());
             });
 
-            // Sort in JS Memory (Highest score first, then earliest timestamp)
             records.sort((a, b) => {
                 if (b.score !== a.score) {
                     return b.score - a.score;
@@ -449,7 +442,6 @@
         }
     };
 
-    // Expose DB function to delete all leaderboard records
     window.clearLeaderboardInCloud = async function() {
         if (!currentUser) {
             try {
@@ -465,7 +457,6 @@
             const leaderboardRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
             const snapshot = await getDocs(leaderboardRef);
 
-            // Delete all documents in collection
             const deletePromises = [];
             snapshot.forEach(docSnap => {
                 deletePromises.push(deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', docSnap.id)));
@@ -481,7 +472,6 @@
 </script>
 
 <script>
-    // Audio Synthesizer
     let audioCtx = null;
 
     function playSound(type) {
@@ -526,7 +516,7 @@
         }
     }
 
-    // Complete 20-Question Quiz Data
+    // Balanced Quiz Data (Answer distribution spread across options 0~3)
     const quizData = [
         {
             section: "1구간 : 기본 개념",
@@ -538,43 +528,43 @@
         {
             section: "1구간 : 기본 개념",
             question: "Q2. AI가 없는 사실을 마치 진짜인 것처럼 거짓말로 지어내서 답하는 현상을 무엇이라고 할까요?",
-            options: ["1) 환각 (할루시네이션)", "2) 오버클럭", "3) 버그", "4) 렉 (Lag)"],
-            answer: 0,
+            options: ["1) 오버클럭", "2) 버그", "3) 환각 (할루시네이션)", "4) 렉 (Lag)"],
+            answer: 2,
             explanation: "AI가 확률적으로 가장 그럴듯한 단어를 연결하다가 진짜처럼 보이는 창작 거짓말을 해버리는 현상입니다."
         },
         {
             section: "1구간 : 기본 개념",
             question: "Q3. 인터넷의 수많은 정보 중에서 진짜 뉴스나 가치 있는 정보를 골라내고 요약해 전달하는 기술 및 과정을 뜻하는 말은?",
-            options: ["1) 큐레이션 (Curation)", "2) 필터링 (Filtering)", "3) 스크래핑 (Scraping)", "4) 파싱 (Parsing)"],
-            answer: 0,
+            options: ["1) 필터링 (Filtering)", "2) 스크래핑 (Scraping)", "3) 파싱 (Parsing)", "4) 큐레이션 (Curation)"],
+            answer: 3,
             explanation: "미술관 큐레이터가 작품을 선별하듯, AI가 사용자에게 맞춤형 정보를 골라주는 행위입니다."
         },
         {
             section: "1구간 : 기본 개념",
             question: "Q4. 컴퓨터나 AI가 카메라 영상 및 이미지를 분석하여 객체를 인식하고 구분해내는 컴퓨터 과학 분야 기술은?",
-            options: ["1) NLP (자연어 처리)", "2) Computer Vision (컴퓨터 비전)", "3) Speech Recognition (음성 인식)", "4) Data Mining (데이터 마이닝)"],
-            answer: 1,
+            options: ["1) Computer Vision (컴퓨터 비전)", "2) NLP (자연어 처리)", "3) Speech Recognition (음성 인식)", "4) Data Mining (데이터 마이닝)"],
+            answer: 0,
             explanation: "인간의 '눈' 역할을 AI에게 부여하는 기술로, 자율주행차나 로봇 인식 시스템의 핵심 기술입니다."
         },
         {
             section: "1구간 : 기본 개념",
             question: "Q5. 웹사이트에 있는 정보들을 AI가 자동 프로그램(봇)으로 긁어모아 수집하는 행위를 무엇이라 할까요?",
-            options: ["1) 데이터 크롤링 / 스크래핑", "2) 데이터 업로드", "3) 데이터 인코딩", "4) 데이터 백업"],
-            answer: 0,
+            options: ["1) 데이터 인코딩", "2) 데이터 크롤링 / 스크래핑", "3) 데이터 업로드", "4) 데이터 백업"],
+            answer: 1,
             explanation: "거미(Spider)가 줄을 타듯 웹페이지들을 돌아다니며 대량의 데이터를 수집해 오는 기술입니다."
         },
         {
             section: "2구간 : 밈 & 최신 기술",
             question: "Q6. 인터넷이나 Wi-Fi 연결 없이, 스마트폰이나 노트북 기기 자체에 탑재된 AI 칩으로 빠르게 연산을 처리하는 방식을 무엇이라고 부를까요?",
-            options: ["1) 온디바이스 AI (On-Device AI)", "2) 클라우드 AI", "3) 메타버스 AI", "4) 웹 AI"],
-            answer: 0,
+            options: ["1) 클라우드 AI", "2) 메타버스 AI", "3) 온디바이스 AI (On-Device AI)", "4) 웹 AI"],
+            answer: 2,
             explanation: "외부 서버로 데이터를 보내지 않고 기기(Device) 내부에서 AI가 직접 연산하여 빠른 속도와 보안성을 자랑합니다."
         },
         {
             section: "2구간 : 밈 & 최신 기술",
             question: "Q7. 2016년 바둑으로 이세돌 9단을 이겨서 세계를 흔들었던 '알파고(AlphaGo)'를 만든 구글의 AI 연구소 이름은?",
-            options: ["1) OpenAI", "2) DeepMind (딥마인드)", "3) Meta AI", "4) Anthropic"],
-            answer: 1,
+            options: ["1) OpenAI", "2) Meta AI", "3) Anthropic", "4) DeepMind (딥마인드)"],
+            answer: 3,
             explanation: "구글 딥마인드는 알파고뿐만 아니라 단백질 구조를 예측하는 '알파폴드' 등을 개발한 AI 연구소입니다."
         },
         {
@@ -587,8 +577,8 @@
         {
             section: "2구간 : 밈 & 최신 기술",
             question: "Q9. 교묘하거나 우회적인 질문을 던져 AI에 설정된 윤리적 제한이나 보안 가이드라인을 뚫고 금지된 답변을 받아내는 공격 행위는?",
-            options: ["1) 탈옥 (Jailbreaking)", "2) 오버클럭 (Overclocking)", "3) 디소스 (Desourcing)", "4) 스크래핑 (Scraping)"],
-            answer: 0,
+            options: ["1) 오버클럭 (Overclocking)", "2) 디소스 (Desourcing)", "3) 탈옥 (Jailbreaking)", "4) 스크래핑 (Scraping)"],
+            answer: 2,
             explanation: "스마트폰 보안 제한을 해제하는 '탈옥'에서 온 용어로, 교묘한 질문으로 AI 보안 제한을 푸는 행위입니다."
         },
         {
@@ -602,12 +592,12 @@
             section: "3구간 : AI 핵심 개념 & 상식",
             question: "Q11. '인공지능', '머신러닝', '딥러닝'의 올바른 포함 관계(범위)는 무엇일까요?",
             options: [
-                "1) 딥러닝 ⊂ 머신러닝 ⊂ 인공지능",
-                "2) 머신러닝 ⊂ 딥러닝 ⊂ 인공지능",
-                "3) 인공지능 ⊂ 머신러닝 ⊂ 딥러닝",
+                "1) 머신러닝 ⊂ 딥러닝 ⊂ 인공지능",
+                "2) 인공지능 ⊂ 머신러닝 ⊂ 딥러닝",
+                "3) 딥러닝 ⊂ 머신러닝 ⊂ 인공지능",
                 "4) 셋은 전혀 다른 별개의 개념이다."
             ],
-            answer: 0,
+            answer: 2,
             explanation: "인공지능(AI)이라는 가장 커다란 범주 안에 머신러닝이 속하며, 머신러닝의 대표 기법 중 하나가 딥러닝입니다."
         },
         {
@@ -621,12 +611,12 @@
             section: "3구간 : AI 핵심 개념 & 상식",
             question: "Q13. ChatGPT에서 'GPT'의 알파벳 약자를 올바르게 풀어쓴 것은 무엇일까요?",
             options: [
-                "1) Generative Pre-trained Transformer",
-                "2) General Program Tool",
-                "3) Global Process Technology",
-                "4) Graphic Processing Terminal"
+                "1) General Program Tool",
+                "2) Global Process Technology",
+                "3) Graphic Processing Terminal",
+                "4) Generative Pre-trained Transformer"
             ],
-            answer: 0,
+            answer: 3,
             explanation: "Generative(생성하는) - Pre-trained(사전 학습된) - Transformer(트랜스포머 알고리즘)의 약자입니다."
         },
         {
@@ -640,19 +630,19 @@
             section: "3구간 : AI 핵심 개념 & 상식",
             question: "Q15. AI 기술로 실제 인물이나 캐릭터의 목소리를 학습시켜 다른 노래를 부르게 만드는 인기 콘텐츠 기술은?",
             options: [
-                "1) AI 커버 (AI Cover)",
-                "2) AI 스피치 (AI Speech)",
+                "1) AI 스피치 (AI Speech)",
+                "2) AI 커버 (AI Cover)",
                 "3) AI 리믹스 (AI Remix)",
                 "4) AI 더빙 (AI Dubbing)"
             ],
-            answer: 0,
+            answer: 1,
             explanation: "유명인의 목소리 음색을 AI로 학습시켜 새로운 곡을 부르게 만드는 'AI 커버' 기술입니다."
         },
         {
             section: "4구간 : 기업 & SF 서브컬처 & 칩셋",
             question: "Q16. AI 가속기와 GPU 시장을 휩쓸고 있으며, AI 시대의 핵심 반도체 기업으로 꼽히는 곳은?",
-            options: ["1) 엔비디아 (NVIDIA)", "2) Intel", "3) AMD", "4) Apple"],
-            answer: 0,
+            options: ["1) Intel", "2) AMD", "3) 엔비디아 (NVIDIA)", "4) Apple"],
+            answer: 2,
             explanation: "엔비디아(NVIDIA)는 AI 모델 학습에 필수적인 GPU 및 AI 반도체 시장을 주도하고 있습니다."
         },
         {
@@ -667,7 +657,7 @@
             question: "Q18. 스마트폰이나 최신 PC에 탑재되어 '인공지능 신경망 연산'만을 전용으로 빠르게 처리하는 칩셋은?",
             options: ["1) NPU (신경망 처리 장치)", "2) HDD (하드디스크)", "3) Power Unit", "4) Sound Card"],
             answer: 0,
-            explanation: "NPU(Neural Processing Unit)는 사람 뇌의 신경망 연산 구조를 모방해 AI 연산 효율을 cực대화한 장치입니다."
+            explanation: "NPU(Neural Processing Unit)는 사람 뇌의 신경망 연산 구조를 모방해 AI 연산 효율을 극대화한 장치입니다."
         },
         {
             section: "4구간 : 기업 & SF 서브컬처 & 칩셋",
@@ -684,13 +674,12 @@
         {
             section: "4구간 : 기업 & SF 서브컬처 & 칩셋",
             question: "Q20. 사람처럼 거의 모든 지적 업무를 수행할 수 있는 수준의 '범용 인공지능'을 뜻하는 단어는?",
-            options: ["1) AGI", "2) API", "3) ASI", "4) GPU"],
-            answer: 0,
+            options: ["1) API", "2) ASI", "3) GPU", "4) AGI"],
+            answer: 3,
             explanation: "AGI(Artificial General Intelligence)는 특정 기능에 국한되지 않고 사람 이상의 통합적 지능을 가진 범용 AI를 뜻합니다."
         }
     ];
 
-    // State Variables
     let currentIdx = 0;
     let score = 0;
     let combo = 0;
@@ -716,7 +705,6 @@
     const mascotAvatar = document.getElementById('mascot-avatar');
     const mascotSpeech = document.getElementById('mascot-speech');
 
-    // Handle Form Start Submit
     function handleStartQuiz(e) {
         e.preventDefault();
         studentId = document.getElementById('student-id').value.trim();
@@ -861,7 +849,6 @@
             resultComment.innerHTML = '🌱 <b>AI 입문자!</b><br>다시 도전해서 상식을 넓혀보세요!';
         }
 
-        // Save Score to Cloud Firestore
         const savingStatus = document.getElementById('saving-status');
         savingStatus.classList.remove('hidden');
 
@@ -877,7 +864,6 @@
         startScreen.classList.remove('hidden');
     }
 
-    // Leaderboard Modal
     async function showLeaderboardModal() {
         const modal = document.getElementById('leaderboard-modal');
         const listEl = document.getElementById('leaderboard-list');
@@ -942,7 +928,6 @@
         document.getElementById('leaderboard-modal').classList.add('hidden');
     }
 
-    // Admin Reset Modal Handlers
     function showAdminResetModal() {
         document.getElementById('admin-password').value = '';
         document.getElementById('admin-error-msg').classList.add('hidden');
@@ -959,7 +944,7 @@
         const errorMsg = document.getElementById('admin-error-msg');
         const submitBtn = document.getElementById('reset-submit-btn');
 
-        // Teacher admin password updated to 1800
+        // Teacher password updated to 1800
         if (pwdInput !== '1800') {
             errorMsg.classList.remove('hidden');
             return;
@@ -973,7 +958,7 @@
             const success = await window.clearLeaderboardInCloud();
             if (success) {
                 hideAdminResetModal();
-                showLeaderboardModal(); // Refresh modal view
+                showLeaderboardModal();
             } else {
                 errorMsg.textContent = '초기화 중 오류가 발생했습니다.';
                 errorMsg.classList.remove('hidden');
@@ -993,7 +978,6 @@
             .replace(/"/g, '&quot;');
     }
 
-    // Attach Functions Globally
     window.handleStartQuiz = handleStartQuiz;
     window.nextQuestion = nextQuestion;
     window.restartQuiz = restartQuiz;
