@@ -1,875 +1,685 @@
-<!--
-GitHub Pages용 Supabase 실시간 공동 순위표.
-필수: Supabase Dashboard > Authentication > Providers > Anonymous Sign-ins 활성화.
-Supabase 프로젝트: ai-school-quiz / quiz_leaderboard.
-기존 QR코드를 유지하려면 GitHub Pages의 기존 HTML 파일명/경로로 업로드하세요.
-학생 ID는 화면에서만 입력하며 데이터베이스에는 저장하지 않습니다.
-주의: 학생이 직접 계산한 점수이므로 조작 방지는 서버 검증이 별도로 필요합니다.
--->
 
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI중점고 점심시간 스피드 AI 상식 퀴즈</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #3B82F6;
-            --primary-dark: #1D4ED8;
-            --bg-color: #EEF2FF;
-            --card-bg: #FFFFFF;
-            --text-main: #0F172A;
-            --text-sub: #334155;
-            --correct-color: #059669;
-            --correct-bg: #D1FAE5;
-            --wrong-color: #DC2626;
-            --wrong-bg: #FEE2E2;
-        }
-
-        * {
-            box-sizing: border-box;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            background-image: radial-gradient(#C7D2FE 1.5px, transparent 1.5px);
-            background-size: 24px 24px;
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 16px;
-        }
-
-        .quiz-card {
-            background-color: var(--card-bg);
-            border-radius: 28px;
-            width: 100%;
-            max-width: 720px;
-            padding: 32px;
-            box-shadow: 0 20px 30px -10px rgba(79, 70, 229, 0.15), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
-            border: 3px solid #C7D2FE;
-            position: relative;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        /* Mascot UI */
-        .mascot-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            background-color: #F1F5F9;
-            border-radius: 20px;
-            padding: 12px 20px;
-            margin-bottom: 20px;
-            border: 2px solid #E2E8F0;
-        }
-
-        .mascot-avatar {
-            font-size: 2.2rem;
-            animation: pulse 2s infinite ease-in-out;
-        }
-
-        .mascot-speech {
-            font-size: 1.05rem;
-            font-weight: 800;
-            color: var(--primary-dark);
-        }
-
-        /* Combo Badge UI */
-        .combo-badge {
-            display: none;
-            position: absolute;
-            top: -18px;
-            right: 36px;
-            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
-            color: white;
-            padding: 8px 22px;
-            border-radius: 30px;
-            font-size: 1.05rem;
-            font-weight: 900;
-            box-shadow: 0 4px 14px rgba(234, 88, 12, 0.4);
-            animation: bounceIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            z-index: 10;
-        }
-
-        /* Options List */
-        .options-list {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-
-        .option-button {
-            background-color: #F8FAFC;
-            color: var(--text-main);
-            border: 2px solid #CBD5E1;
-            padding: 16px 22px;
-            border-radius: 16px;
-            font-size: 1.05rem;
-            font-weight: 700;
-            text-align: left;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .option-button:hover:not(:disabled) {
-            background-color: #EEF2FF;
-            border-color: var(--primary-color);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-        }
-
-        .option-button.correct {
-            background-color: var(--correct-bg) !important;
-            border-color: var(--correct-color) !important;
-            color: #065F46 !important;
-            font-weight: 800;
-        }
-
-        .option-button.wrong {
-            background-color: var(--wrong-bg) !important;
-            border-color: var(--wrong-color) !important;
-            color: #991B1B !important;
-            font-weight: 800;
-        }
-
-        /* Animations */
-        .shake-animation {
-            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
-            border-color: var(--wrong-color) !important;
-        }
-
-        .correct-animation {
-            animation: bounce 0.4s ease;
-        }
-
-        @keyframes shake {
-            10%, 90% { transform: translate3d(-3px, 0, 0); }
-            20%, 80% { transform: translate3d(6px, 0, 0); }
-            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
-            40%, 60% { transform: translate3d(8px, 0, 0); }
-        }
-
-        @keyframes bounce {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.08); }
-        }
-
-        /* Custom Scrollbar */
-        .ranking-scroll::-webkit-scrollbar {
-            width: 6px;
-        }
-        .ranking-scroll::-webkit-scrollbar-thumb {
-            background-color: #CBD5E1;
-            border-radius: 4px;
-        }
-
-        @media (max-width: 640px) {
-            .quiz-card {
-                padding: 22px 18px;
-                border-radius: 20px;
-            }
-            .combo-badge {
-                right: 18px;
-                font-size: 0.88rem;
-                padding: 6px 14px;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI중점고 AI 상식 퀴즈</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;padding:18px;
+  display:flex;align-items:center;justify-content:center;
+  background:#eef2ff;
+  background-image:radial-gradient(#c7d2fe 1.5px,transparent 1.5px);
+  background-size:24px 24px;
+  font-family:Arial,"Malgun Gothic",sans-serif;color:#172033
+}
+.card{
+  width:100%;max-width:720px;background:#fff;
+  border:3px solid #c7d2fe;border-radius:25px;
+  padding:28px;box-shadow:0 12px 35px #6366f122
+}
+.hidden{display:none!important}
+h1{font-size:27px;font-weight:900;color:#2563eb}
+input{
+  width:100%;padding:14px;border:2px solid #cbd5e1;
+  border-radius:12px;margin-top:6px;font-size:16px
+}
+button{cursor:pointer;font-family:inherit}
+.primary{
+  background:#2563eb;color:white;border:none;
+  border-radius:13px;padding:15px 20px;font-size:17px;
+  font-weight:800;width:100%
+}
+.primary:hover{background:#1d4ed8}
+.secondary{
+  background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;
+  padding:12px 18px;border-radius:12px;font-weight:800
+}
+.option{
+  display:block;width:100%;text-align:left;padding:16px;
+  background:#f8fafc;border:2px solid #cbd5e1;
+  border-radius:15px;margin-bottom:11px;
+  font-size:16px;font-weight:700
+}
+.option:disabled{cursor:default}
+.option.correct{
+  background:#d1fae5;border-color:#059669;color:#065f46
+}
+.option.wrong{
+  background:#fee2e2;border-color:#dc2626;color:#991b1b
+}
+.mascot{
+  padding:15px;background:#f1f5f9;border-radius:17px;
+  text-align:center;font-weight:800;color:#1d4ed8;margin-bottom:20px
+}
+.progress{height:13px;background:#e2e8f0;border-radius:20px;overflow:hidden}
+#progress-bar{
+  height:100%;width:0;background:linear-gradient(90deg,#4f46e5,#2563eb);
+  transition:width .3s
+}
+#explanation{
+  padding:17px;background:#fefce8;border:2px solid #fde047;
+  border-radius:15px;margin-top:17px;line-height:1.7;font-weight:700
+}
+#combo{color:#ea580c;font-weight:900;text-align:center}
+.modal{
+  position:fixed;inset:0;background:#0f172acc;
+  display:flex;align-items:center;justify-content:center;
+  padding:15px;z-index:100
+}
+.modal-box{
+  width:100%;max-width:530px;background:white;
+  padding:22px;border-radius:23px;max-height:85vh;
+  display:flex;flex-direction:column
+}
+#ranking-list{overflow-y:auto;flex:1;min-height:110px}
+.rank{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;background:#f8fafc;border:1px solid #e2e8f0;
+  padding:13px;margin:9px 0;border-radius:14px
+}
+.rank-name{font-weight:800;overflow-wrap:anywhere}
+.rank-score{color:#2563eb;font-size:19px;font-weight:900;white-space:nowrap}
+.status{font-size:13px;text-align:center;margin:10px 0;font-weight:700}
+@media(max-width:600px){
+  .card{padding:22px 17px}
+  h1{font-size:24px}
+}
+</style>
 </head>
 <body>
 
-<div class="quiz-card" id="main-card">
-    <div id="combo-badge" class="combo-badge">🔥 2연속 정답! 콤보 보너스!</div>
+<main class="card">
 
-    <div id="cloud-status" class="hidden"></div>
-    <!-- Start & Student Input Screen -->
-    <div id="start-screen" class="text-center py-2">
-        <div class="text-6xl mb-3">🤖</div>
-        <h1 class="text-3xl font-black text-blue-700 mb-2">AI중점고 AI 상식 퀴즈</h1>
-        <p class="text-slate-600 font-semibold mb-6 leading-relaxed">
-            점심시간 스피드 AI 상식 퀴즈 게임!<br>학번과 별명을 입력하고 전교 명예의 전당에 도전하세요!
-        </p>
+<div id="start-screen" class="text-center">
+  <div class="text-6xl mb-3">🤖</div>
+  <h1>AI중점고 AI 상식 퀴즈</h1>
+  <p class="my-5 text-slate-600 font-bold leading-relaxed">
+    점심시간 스피드 AI 상식 퀴즈 게임!<br>
+    학번과 별명을 입력하고 전교 명예의 전당에 도전하세요!
+  </p>
 
-        <form id="user-form" onsubmit="handleStartQuiz(event)" class="max-w-md mx-auto space-y-4 mb-6 text-left">
-            <div>
-                <label for="student-id" class="block text-sm font-extrabold text-slate-700 mb-1"> 학번 (예: 10101, 20315)</label>
-                <input type="text" id="student-id" required placeholder="5자리 학번 입력" pattern="^[0-9]{4,6}$" title="4~6자리 숫자를 입력해주세요."
-                       class="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-blue-500 focus:outline-none font-bold text-slate-800 text-base">
-            </div>
-            <div>
-                <label for="student-nickname" class="block text-sm font-extrabold text-slate-700 mb-1"> 별명 / 이름</label>
-                <input type="text" id="student-nickname" required placeholder="랭킹에 표시될 별명 입력" maxlength="12"
-                       class="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-blue-500 focus:outline-none font-bold text-slate-800 text-base">
-            </div>
-            <button type="submit" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-extrabold text-lg shadow-lg hover:shadow-xl transition-all duration-150 transform hover:-translate-y-0.5">
-                퀴즈 시작하기 🚀
-            </button>
-        </form>
-
-        <button onclick="showLeaderboardModal()" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-bold text-sm bg-blue-50 px-4 py-2.5 rounded-full border border-blue-200">
-            <i class="fa-solid fa-trophy text-amber-500"></i> 전교 순위표(명예의 전당) 보기
-        </button>
+  <form id="start-form" class="text-left space-y-4">
+    <div>
+      <label class="font-bold">학번 (예: 10101, 20315)</label>
+      <input id="student-id" type="text" inputmode="numeric"
+        pattern="[0-9]{4,6}" maxlength="6" required
+        placeholder="학번 입력">
     </div>
-
-    <!-- Quiz Screen -->
-    <div id="quiz-screen" class="hidden">
-        <!-- Mascot Feedback UI -->
-        <div class="mascot-container">
-            <div id="mascot-avatar" class="mascot-avatar">🤖</div>
-            <div id="mascot-speech" class="mascot-speech">준비되셨나요? 같이 풀어봐요!</div>
-        </div>
-
-        <div class="flex justify-between items-center mb-3">
-            <span id="badge" class="bg-indigo-100 text-indigo-800 text-sm font-extrabold px-4 py-1.5 rounded-full border border-indigo-300">1구간</span>
-            <div id="score-display" class="text-xl font-black text-blue-700">점수: 0점</div>
-        </div>
-
-        <div class="w-full h-3.5 bg-slate-200 rounded-full mb-6 overflow-hidden">
-            <div id="progress-bar" class="h-full bg-gradient-to-r from-indigo-600 to-blue-600 w-0 transition-all duration-300"></div>
-        </div>
-
-        <div id="question-title" class="text-xl font-extrabold text-slate-900 mb-5 leading-relaxed break-keep">문제 설명 영역</div>
-        <div id="options-list" class="options-list"></div>
-
-        <!-- Explanation Card -->
-        <div id="explanation-card" class="mt-5 p-5 bg-yellow-50 border-2 border-yellow-300 rounded-2xl hidden transition-all">
-            <div class="text-yellow-800 font-black text-base mb-1.5 flex items-center gap-2">
-                <span>💡</span> 해설 &amp; 단어 풀이
-            </div>
-            <div id="explanation-body" class="text-slate-800 font-bold text-base leading-relaxed break-keep">해설 내용</div>
-        </div>
-
-        <button id="next-btn" class="mt-5 w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-extrabold text-lg shadow-md hover:shadow-lg transition-all hidden" onclick="nextQuestion()">
-            다음 문제로 ➔
-        </button>
+    <div>
+      <label class="font-bold">별명 / 이름</label>
+      <input id="nickname" type="text" maxlength="12" required
+        placeholder="순위표에 표시할 별명">
     </div>
+    <button class="primary" type="submit">퀴즈 시작하기 🚀</button>
+  </form>
 
-    <!-- Result Screen -->
-    <div id="result-screen" class="text-center py-2 hidden">
-        <div class="text-5xl mb-2">🎉</div>
-        <h2 class="text-2xl font-black text-slate-800 mb-1">퀴즈 종료!</h2>
-        <div id="player-info" class="text-slate-500 font-bold text-sm mb-3">학번 - 별명</div>
-
-        <div class="text-slate-600 font-bold text-lg">당신의 최종 점수는?</div>
-        <div id="final-score" class="text-5xl font-black text-blue-700 my-3">0점</div>
-        <div id="result-comment" class="text-base font-bold text-slate-700 mb-6 break-keep">수고하셨습니다!</div>
-
-        <div id="saving-status" class="text-sm font-extrabold text-blue-600 mb-4 hidden flex items-center justify-center gap-2">
-            <i class="fa-solid fa-spinner animate-spin"></i> 순위를 저장하는 중입니다...
-        </div>
-
-        <div class="flex flex-col sm:flex-row gap-3 justify-center mb-6">
-            <button onclick="restartQuiz()" class="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-extrabold text-base shadow-md transition-all">
-                다시 도전하기 🔄
-            </button>
-            <button onclick="showLeaderboardModal()" class="px-6 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-extrabold text-base shadow-md transition-all">
-                🏆 순위표 확인하기
-            </button>
-        </div>
-    </div>
+  <button class="secondary mt-5" onclick="openRanking()">
+    🏆 전교 순위표(명예의 전당) 보기
+  </button>
 </div>
 
-<!-- Leaderboard Modal Screen -->
-<div id="leaderboard-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border-2 border-indigo-100 flex flex-col max-h-[85vh]">
-        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-            <div class="flex items-center gap-2.5">
-                <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xl font-bold">
-                    🏆
-                </div>
-                <div>
-                    <h3 class="text-xl font-black text-slate-900">전교 명예의 전당</h3>
-                    <p class="text-xs font-extrabold text-slate-500">실시간 스피드 AI 상식 왕</p>
-                </div>
-            </div>
-            <button onclick="hideLeaderboardModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
+<div id="quiz-screen" class="hidden">
+  <div class="mascot" id="mascot">🤖 준비되셨나요? 같이 풀어봐요!</div>
 
-        <!-- Leaderboard List -->
-        <div id="leaderboard-list" class="overflow-y-auto ranking-scroll space-y-2.5 pr-1 flex-1">
-            <div class="text-center py-8 text-slate-400 font-bold">
-                <i class="fa-solid fa-spinner animate-spin text-2xl mb-2"></i>
-                <p>순위를 불러오는 중입니다...</p>
-            </div>
-        </div>
+  <div class="flex justify-between font-extrabold mb-3">
+    <span id="section" class="text-indigo-700">1구간</span>
+    <span id="score" class="text-blue-700">점수: 0점</span>
+  </div>
 
-        <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
-            <span class="text-xs font-bold text-slate-500">동일 학번 최고 점수만 반영</span>
-            <button onclick="hideLeaderboardModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold rounded-xl text-sm transition-all">
-                닫기
-            </button>
-        </div>
+  <div class="progress mb-5">
+    <div id="progress-bar"></div>
+  </div>
+
+  <div id="combo" class="mb-2"></div>
+  <h2 id="question" class="text-xl font-extrabold mb-5 leading-relaxed"></h2>
+  <div id="options"></div>
+
+  <div id="explanation" class="hidden">
+    💡 해설 & 단어 풀이
+    <p id="explanation-text" class="mt-2 text-slate-700"></p>
+  </div>
+
+  <button id="next-btn" class="primary hidden mt-5" onclick="nextQuestion()">
+    다음 문제로 ➜
+  </button>
+</div>
+
+<div id="result-screen" class="hidden text-center">
+  <div class="text-6xl">🎉</div>
+  <h2 class="text-2xl font-black mt-3">퀴즈 종료!</h2>
+  <p id="player-info" class="text-slate-500 font-bold mt-2"></p>
+  <p class="mt-6 font-bold">당신의 최종 점수는?</p>
+  <div id="final-score" class="text-5xl font-black text-blue-700 my-5"></div>
+  <p id="result-comment" class="font-bold mb-5"></p>
+  <p id="saving-status" class="status">점수 저장 중...</p>
+
+  <button class="primary mb-3" onclick="restartQuiz()">다시 도전하기 🔄</button>
+  <button class="secondary w-full" onclick="openRanking()">🏆 순위표 확인하기</button>
+</div>
+
+</main>
+
+<div id="ranking-modal" class="modal hidden">
+  <div class="modal-box">
+    <div class="flex justify-between items-center border-b pb-3">
+      <div>
+        <h2 class="text-xl font-black">🏆 전교 명예의 전당</h2>
+        <p class="text-slate-500 text-xs font-bold">실시간 AI 상식 퀴즈 순위</p>
+      </div>
+      <button onclick="closeRanking()" class="text-2xl text-slate-500">✕</button>
     </div>
+
+    <p id="ranking-status" class="status text-blue-600"></p>
+    <div id="ranking-list"></div>
+
+    <div class="border-t mt-4 pt-4 flex justify-between gap-2">
+      <button class="secondary" onclick="refreshRanking()">↻ 새로고침</button>
+      <button class="secondary" onclick="closeRanking()">닫기</button>
+    </div>
+    <p class="text-center text-xs text-slate-400 mt-3">
+      각 기기에서 기록한 최고 점수만 반영됩니다.
+    </p>
+  </div>
 </div>
 
 <script type="module">
-    // Supabase Dashboard > Authentication > Providers > Anonymous Sign-ins 를 활성화하세요.
-    // GitHub Pages의 기존 HTML 파일명과 경로를 유지하면 QR코드는 그대로 사용 가능합니다.
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
-    const supabase = createClient(
-        "https://hgfsgeeppaywanjegglj.supabase.co",
-        "sb_publishable_EHs4d1xTTAOyVpK5ggyuwA_UE-hL5Sg"
-    );
-    const statusMessage = document.getElementById('cloud-status');
-    const setStatus = (message, error = false) => {
-        if (!statusMessage) return;
-        statusMessage.textContent = message;
-        statusMessage.className = `text-center text-sm font-bold mb-3 ${error ? 'text-red-600' : 'text-blue-700'}`;
-        statusMessage.classList.remove('hidden');
-    };
-    let realtimeChannel = null;
-    const authReady = (async () => {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        if (sessionData.session?.user) return sessionData.session.user;
-        const { data, error } = await supabase.auth.signInAnonymously();
-        if (error) throw error;
-        return data.user;
-    })().catch(error => {
-        console.error('Supabase anonymous login failed:', error);
-        setStatus('Supabase 익명 로그인이 필요합니다. Authentication > Providers에서 Anonymous Sign-ins를 켜주세요.', true);
-        return null;
+import {createClient} from
+  "https://esm.sh/@supabase/supabase-js@2.75.0";
+
+const supabase = createClient(
+  "https://hgfsgeeppaywanjegglj.supabase.co",
+  "sb_publishable_EHs4d1xTTAOyVpK5ggyuwA_UE-hL5Sg"
+);
+
+// 학생은 별도 로그인 화면 없이 자동으로 참가자 세션을 생성합니다.
+let sessionPromise = null;
+
+async function getPlayer(){
+  if(!sessionPromise){
+    sessionPromise = (async()=>{
+      const {data:current,error:sessionError} =
+        await supabase.auth.getSession();
+
+      if(sessionError) throw sessionError;
+      if(current.session?.user) return current.session.user;
+
+      const {data,error} = await supabase.auth.signInAnonymously();
+      if(error) throw error;
+      if(!data.user) throw new Error("참가자 연결 실패");
+
+      return data.user;
+    })().catch(err=>{
+      sessionPromise = null;
+      throw err;
     });
-    window.saveScoreToCloud = async (_studentId, nickname, score) => {
-        const user = await authReady;
-        if (!user) throw new Error('Supabase 익명 로그인 실패');
-        const { data: existing, error: readError } = await supabase.from('quiz_leaderboard')
-            .select('score').eq('user_id', user.id).maybeSingle();
-        if (readError) throw readError;
-        if (existing && existing.score >= score) return;
-        const { error } = await supabase.from('quiz_leaderboard').upsert({
-            user_id: user.id, nickname: String(nickname).trim().slice(0,20), score,
-            updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' });
-        if (error) throw error;
-    };
-    window.watchLeaderboard = async (onRecords, onError) => {
-        const user = await authReady;
-        if (!user) { onError('Supabase 익명 로그인 설정을 확인해주세요.'); return; }
-        if (realtimeChannel) { await supabase.removeChannel(realtimeChannel); realtimeChannel = null; }
-        const fetchScores = async () => {
-            const { data, error } = await supabase.from('quiz_leaderboard')
-                .select('nickname,score,updated_at').order('score',{ascending:false})
-                .order('updated_at',{ascending:true}).limit(1000);
-            if (error) { console.error(error); onError('순위표를 불러오지 못했습니다: ' + error.message); return; }
-            onRecords(data || []);
-        };
-        await fetchScores();
-        realtimeChannel = supabase.channel('school-quiz-live-' + Math.random().toString(36).slice(2))
-            .on('postgres_changes', {event:'*',schema:'public',table:'quiz_leaderboard'}, fetchScores)
-            .subscribe(status => { if (status === 'CHANNEL_ERROR') onError('실시간 연결 오류: 페이지를 새로고침해 주세요.'); });
-    };
-    window.stopLeaderboardWatch = () => {
-        if (realtimeChannel) supabase.removeChannel(realtimeChannel);
-        realtimeChannel = null;
-    };
+  }
+  return sessionPromise;
+}
+
+// 기기마다 최고 점수만 저장
+window.saveCloudScore = async(nickname,score)=>{
+  const user = await getPlayer();
+
+  const {data:old,error:readError} = await supabase
+    .from("quiz_leaderboard")
+    .select("score")
+    .eq("user_id",user.id)
+    .maybeSingle();
+
+  if(readError) throw readError;
+  if(old && old.score >= score) return;
+
+  const {error} = await supabase
+    .from("quiz_leaderboard")
+    .upsert({
+      user_id:user.id,
+      nickname:nickname.trim().slice(0,20),
+      score:score,
+      updated_at:new Date().toISOString()
+    },{onConflict:"user_id"});
+
+  if(error) throw error;
+};
+
+// 모든 기기의 점수를 같은 데이터베이스에서 읽음
+let channel = null;
+let refreshInterval = null;
+let rankingVersion = 0;
+
+window.stopCloudRanking = async()=>{
+  rankingVersion++;
+  if(refreshInterval){
+    clearInterval(refreshInterval);
+    refreshInterval = null;
+  }
+  if(channel){
+    const oldChannel = channel;
+    channel = null;
+    await supabase.removeChannel(oldChannel);
+  }
+};
+
+window.startCloudRanking = async(onData,onError)=>{
+  await window.stopCloudRanking();
+  const version = rankingVersion;
+
+  async function fetchRanking(){
+    if(version !== rankingVersion) return;
+
+    const {data,error} = await supabase
+      .from("quiz_leaderboard")
+      .select("nickname,score,updated_at")
+      .order("score",{ascending:false})
+      .order("updated_at",{ascending:true})
+      .limit(1000);
+
+    if(version !== rankingVersion) return;
+    if(error) onError(error.message);
+    else onData(data||[]);
+  }
+
+  try{
+    await getPlayer();
+    if(version !== rankingVersion) return;
+
+    await fetchRanking();
+    if(version !== rankingVersion) return;
+
+    channel = supabase
+      .channel("ai-school-ranking-"+Math.random().toString(36).slice(2))
+      .on("postgres_changes",{
+        event:"*",
+        schema:"public",
+        table:"quiz_leaderboard"
+      },()=>fetchRanking())
+      .subscribe();
+
+    // 실시간 구독 누락이나 네트워크 문제에 대비
+    refreshInterval = setInterval(fetchRanking,10000);
+  }catch(err){
+    if(version===rankingVersion) onError(err.message);
+  }
+};
 </script>
 
 <script>
-    let audioCtx = null;
+// 기존 AI 상식 퀴즈 20문항
+// answer는 0부터 시작하는 정답 번호입니다.
+const quizData=[
+{
+ section:"1구간 : 기본 개념",
+ question:"Q1. ChatGPT, Claude 등 AI에게 원하는 결과를 얻기 위해 입력하는 명령어나 지시문은?",
+ options:["1) 알고리즘","2) 프롬프트","3) 파라미터","4) 소스코드"],
+ answer:1,
+ explanation:"AI에게 방향을 지시하는 문장을 프롬프트라고 부릅니다."
+},
+{
+ section:"1구간 : 기본 개념",
+ question:"Q2. AI가 없는 사실을 진짜인 것처럼 지어내는 현상은?",
+ options:["1) 오버클럭","2) 버그","3) 환각 (할루시네이션)","4) 렉"],
+ answer:2,
+ explanation:"AI가 그럴듯하지만 사실과 다른 정보를 생성하는 현상을 환각이라고 합니다."
+},
+{
+ section:"1구간 : 기본 개념",
+ question:"Q3. 수많은 정보 중 가치 있는 정보를 골라내고 전달하는 과정은?",
+ options:["1) 필터링","2) 스크래핑","3) 파싱","4) 큐레이션"],
+ answer:3,
+ explanation:"큐레이션은 정보를 목적에 맞게 선별하고 정리하여 전달하는 과정입니다."
+},
+{
+ section:"1구간 : 기본 개념",
+ question:"Q4. AI가 이미지와 영상을 분석하고 객체를 인식하는 분야는?",
+ options:["1) 컴퓨터 비전","2) 자연어 처리","3) 음성 인식","4) 데이터 마이닝"],
+ answer:0,
+ explanation:"컴퓨터 비전은 컴퓨터가 시각 정보를 분석하고 이해하게 하는 기술입니다."
+},
+{
+ section:"1구간 : 기본 개념",
+ question:"Q5. 웹사이트의 정보를 자동 프로그램으로 수집하는 행위는?",
+ options:["1) 데이터 인코딩","2) 데이터 크롤링 / 스크래핑","3) 업로드","4) 백업"],
+ answer:1,
+ explanation:"크롤링과 스크래핑은 웹에서 정보를 자동으로 탐색하거나 추출하는 기술입니다."
+},
+{
+ section:"2구간 : 밈 & 최신 기술",
+ question:"Q6. 인터넷 연결 없이 기기 자체에서 AI 연산을 처리하는 방식은?",
+ options:["1) 클라우드 AI","2) 메타버스 AI","3) 온디바이스 AI","4) 웹 AI"],
+ answer:2,
+ explanation:"온디바이스 AI는 기기 내부의 연산 자원을 이용하여 AI 기능을 실행합니다."
+},
+{
+ section:"2구간 : 밈 & 최신 기술",
+ question:"Q7. 이세돌 9단과 대국한 알파고를 개발한 AI 연구소는?",
+ options:["1) OpenAI","2) Meta AI","3) Anthropic","4) DeepMind"],
+ answer:3,
+ explanation:"딥마인드는 알파고와 알파폴드 등을 개발한 AI 연구 조직입니다."
+},
+{
+ section:"2구간 : 밈 & 최신 기술",
+ question:"Q8. 대화 상대가 사람인지 기계인지 구별할 수 있는지 평가하는 유명한 테스트는?",
+ options:["1) 페르미 테스트","2) 튜링 테스트","3) 스피드 테스트","4) IQ 테스트"],
+ answer:1,
+ explanation:"앨런 튜링이 1950년에 제안한 기계 지능과 관련된 사고실험입니다."
+},
+{
+ section:"2구간 : 밈 & 최신 기술",
+ question:"Q9. 우회적인 질문으로 AI의 안전 제한을 무력화하려는 공격 행위는?",
+ options:["1) 오버클럭","2) 디소스","3) 탈옥 (Jailbreaking)","4) 스크래핑"],
+ answer:2,
+ explanation:"AI 탈옥은 우회적인 입력으로 모델의 안전 제한을 회피하려는 시도입니다."
+},
+{
+ section:"2구간 : 밈 & 최신 기술",
+ question:"Q10. AI가 문장을 처리할 때 사용하는 작은 텍스트 단위는?",
+ options:["1) 픽셀","2) 토큰","3) 바이트","4) 소스코드"],
+ answer:1,
+ explanation:"토큰은 AI가 텍스트를 처리하는 데 사용하는 기본 단위입니다."
+},
+{
+ section:"3구간 : AI 핵심 개념",
+ question:"Q11. AI, 머신러닝, 딥러닝의 올바른 포함 관계는?",
+ options:[
+  "1) 머신러닝 ⊂ 딥러닝 ⊂ AI",
+  "2) AI ⊂ 머신러닝 ⊂ 딥러닝",
+  "3) 딥러닝 ⊂ 머신러닝 ⊂ AI",
+  "4) 서로 관련이 없다"
+ ],
+ answer:2,
+ explanation:"AI 안에 머신러닝이 포함되고, 머신러닝 안에 딥러닝이 포함됩니다."
+},
+{
+ section:"3구간 : AI 핵심 개념",
+ question:"Q12. 정답 라벨 없이 데이터의 패턴을 찾는 학습 방식은?",
+ options:["1) 지도 학습","2) 비지도 학습","3) 강화 학습","4) 벼락치기 학습"],
+ answer:1,
+ explanation:"비지도 학습은 정답 라벨 없이 데이터의 구조와 패턴을 발견합니다."
+},
+{
+ section:"3구간 : AI 핵심 개념",
+ question:"Q13. GPT의 약자를 올바르게 풀어쓴 것은?",
+ options:[
+  "1) General Program Tool",
+  "2) Global Process Technology",
+  "3) Graphic Processing Terminal",
+  "4) Generative Pre-trained Transformer"
+ ],
+ answer:3,
+ explanation:"GPT는 Generative Pre-trained Transformer의 약자입니다."
+},
+{
+ section:"3구간 : AI 핵심 개념",
+ question:"Q14. AI가 학습 데이터에 지나치게 맞춰져 새로운 데이터에 약해지는 현상은?",
+ options:["1) 과적합 (Overfitting)","2) 과소적합","3) 딥러닝","4) 다운로드"],
+ answer:0,
+ explanation:"과적합은 학습 데이터에는 잘 맞지만 새로운 데이터에서 성능이 떨어지는 현상입니다."
+},
+{
+ section:"3구간 : AI 핵심 개념",
+ question:"Q15. AI로 목소리를 학습시켜 다른 노래를 부르게 하는 콘텐츠 기술은?",
+ options:["1) AI 스피치","2) AI 커버","3) AI 리믹스","4) AI 더빙"],
+ answer:1,
+ explanation:"AI 커버는 AI 음성 합성 기술을 사용하여 특정 목소리로 노래를 재현하는 방식입니다."
+},
+{
+ section:"4구간 : 기업 & SF & 칩셋",
+ question:"Q16. AI 가속기와 GPU 시장의 대표적인 기업은?",
+ options:["1) Intel","2) AMD","3) NVIDIA","4) Apple"],
+ answer:2,
+ explanation:"엔비디아는 AI 학습과 추론에 사용되는 GPU 및 AI 가속기를 공급하는 대표 기업입니다."
+},
+{
+ section:"4구간 : 기업 & SF & 칩셋",
+ question:"Q17. ChatGPT를 개발한 기업은?",
+ options:["1) Google","2) OpenAI","3) Meta","4) Microsoft"],
+ answer:1,
+ explanation:"ChatGPT는 OpenAI가 개발한 대화형 인공지능 서비스입니다."
+},
+{
+ section:"4구간 : 기업 & SF & 칩셋",
+ question:"Q18. AI 신경망 연산을 효율적으로 처리하도록 설계된 칩은?",
+ options:["1) NPU","2) HDD","3) Power Unit","4) Sound Card"],
+ answer:0,
+ explanation:"NPU는 Neural Processing Unit으로 신경망 연산을 가속하는 처리 장치입니다."
+},
+{
+ section:"4구간 : 기업 & SF & 칩셋",
+ question:"Q19. SF 영화와 AI의 연결 중 잘못된 것은?",
+ options:[
+  "1) 어벤져스 - 울트론",
+  "2) 인터스텔라 - 타스",
+  "3) 매트릭스 - 스카이넷",
+  "4) 아이언맨 - 프라이데이"
+ ],
+ answer:2,
+ explanation:"스카이넷은 매트릭스가 아니라 터미네이터 시리즈에 등장하는 AI입니다."
+},
+{
+ section:"4구간 : 기업 & SF & 칩셋",
+ question:"Q20. 범용 인공지능을 뜻하는 약자는?",
+ options:["1) API","2) ASI","3) GPU","4) AGI"],
+ answer:3,
+ explanation:"AGI는 Artificial General Intelligence로 다양한 지적 업무를 수행할 수 있는 범용 인공지능을 뜻합니다."
+}
+];
 
-    function playSound(type) {
-        try {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+// 퀴즈 상태
+let currentIdx=0;
+let score=0;
+let combo=0;
+let answered=false;
+let studentId="";
+let studentNickname="";
 
-            if (type === 'correct') {
-                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.3);
-            } else if (type === 'combo') {
-                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.08);
-                osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.16);
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.4);
-            } else {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(180, audioCtx.currentTime);
-                osc.frequency.setValueAtTime(110, audioCtx.currentTime + 0.15);
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.4);
-            }
-        } catch (e) {
-            console.log("Audio playback not allowed yet", e);
-        }
+const el=id=>document.getElementById(id);
+
+function showScreen(screen){
+  ["start-screen","quiz-screen","result-screen"].forEach(id=>{
+    el(id).classList.toggle("hidden",id!==screen);
+  });
+}
+
+el("start-form").addEventListener("submit",event=>{
+  event.preventDefault();
+  studentId=el("student-id").value.trim();
+  studentNickname=el("nickname").value.trim();
+
+  if(!studentId||!studentNickname) return;
+
+  currentIdx=0;
+  score=0;
+  combo=0;
+  answered=false;
+
+  showScreen("quiz-screen");
+  loadQuestion();
+});
+
+function loadQuestion(){
+  answered=false;
+  const q=quizData[currentIdx];
+
+  el("section").textContent=q.section;
+  el("score").textContent=`점수: ${score}점`;
+  el("progress-bar").style.width=
+    `${currentIdx/quizData.length*100}%`;
+  el("question").textContent=q.question;
+  el("mascot").textContent=
+    `🤖 문제 ${currentIdx+1}/${quizData.length} : 신중하게 골라보세요!`;
+
+  el("explanation").classList.add("hidden");
+  el("next-btn").classList.add("hidden");
+  el("combo").textContent="";
+  el("options").innerHTML="";
+
+  q.options.forEach((option,index)=>{
+    const button=document.createElement("button");
+    button.className="option";
+    button.textContent=option;
+    button.onclick=()=>chooseAnswer(index);
+    el("options").appendChild(button);
+  });
+}
+
+function chooseAnswer(index){
+  if(answered) return;
+  answered=true;
+
+  const q=quizData[currentIdx];
+  const buttons=Array.from(el("options").children);
+  buttons.forEach(button=>button.disabled=true);
+
+  if(index===q.answer){
+    buttons[index].classList.add("correct");
+    combo++;
+
+    const earned=combo>=2?15:10;
+    score+=earned;
+
+    if(combo>=2){
+      el("combo").textContent=`🔥 ${combo}연속 정답! +15점`;
     }
 
-    // Balanced Quiz Data (Answer distribution spread across options 0~3)
-    const quizData = [
-        {
-            section: "1구간 : 기본 개념",
-            question: "Q1. 최근 ChatGPT, Claude 등 AI에게 원하는 결과를 얻기 위해 입력하는 명령어나 지시문을 무엇이라고 할까요?",
-            options: ["1) 알고리즘", "2) 프롬프트", "3) 파라미터", "4) 소스코드"],
-            answer: 1,
-            explanation: "연극에서 배우에게 대사 힌트를 주듯, AI에게 방향을 지시하는 문장을 '프롬프트'라고 부릅니다."
-        },
-        {
-            section: "1구간 : 기본 개념",
-            question: "Q2. AI가 없는 사실을 마치 진짜인 것처럼 거짓말로 지어내서 답하는 현상을 무엇이라고 할까요?",
-            options: ["1) 오버클럭", "2) 버그", "3) 환각 (할루시네이션)", "4) 렉 (Lag)"],
-            answer: 2,
-            explanation: "AI가 확률적으로 가장 그럴듯한 단어를 연결하다가 진짜처럼 보이는 창작 거짓말을 해버리는 현상입니다."
-        },
-        {
-            section: "1구간 : 기본 개념",
-            question: "Q3. 인터넷의 수많은 정보 중에서 진짜 뉴스나 가치 있는 정보를 골라내고 요약해 전달하는 기술 및 과정을 뜻하는 말은?",
-            options: ["1) 필터링 (Filtering)", "2) 스크래핑 (Scraping)", "3) 파싱 (Parsing)", "4) 큐레이션 (Curation)"],
-            answer: 3,
-            explanation: "미술관 큐레이터가 작품을 선별하듯, AI가 사용자에게 맞춤형 정보를 골라주는 행위입니다."
-        },
-        {
-            section: "1구간 : 기본 개념",
-            question: "Q4. 컴퓨터나 AI가 카메라 영상 및 이미지를 분석하여 객체를 인식하고 구분해내는 컴퓨터 과학 분야 기술은?",
-            options: ["1) Computer Vision (컴퓨터 비전)", "2) NLP (자연어 처리)", "3) Speech Recognition (음성 인식)", "4) Data Mining (데이터 마이닝)"],
-            answer: 0,
-            explanation: "인간의 '눈' 역할을 AI에게 부여하는 기술로, 자율주행차나 로봇 인식 시스템의 핵심 기술입니다."
-        },
-        {
-            section: "1구간 : 기본 개념",
-            question: "Q5. 웹사이트에 있는 정보들을 AI가 자동 프로그램(봇)으로 긁어모아 수집하는 행위를 무엇이라 할까요?",
-            options: ["1) 데이터 인코딩", "2) 데이터 크롤링 / 스크래핑", "3) 데이터 업로드", "4) 데이터 백업"],
-            answer: 1,
-            explanation: "거미(Spider)가 줄을 타듯 웹페이지들을 돌아다니며 대량의 데이터를 수집해 오는 기술입니다."
-        },
-        {
-            section: "2구간 : 밈 & 최신 기술",
-            question: "Q6. 인터넷이나 Wi-Fi 연결 없이, 스마트폰이나 노트북 기기 자체에 탑재된 AI 칩으로 빠르게 연산을 처리하는 방식을 무엇이라고 부를까요?",
-            options: ["1) 클라우드 AI", "2) 메타버스 AI", "3) 온디바이스 AI (On-Device AI)", "4) 웹 AI"],
-            answer: 2,
-            explanation: "외부 서버로 데이터를 보내지 않고 기기(Device) 내부에서 AI가 직접 연산하여 빠른 속도와 보안성을 자랑합니다."
-        },
-        {
-            section: "2구간 : 밈 & 최신 기술",
-            question: "Q7. 2016년 바둑으로 이세돌 9단을 이겨서 세계를 흔들었던 '알파고(AlphaGo)'를 만든 구글의 AI 연구소 이름은?",
-            options: ["1) OpenAI", "2) Meta AI", "3) Anthropic", "4) DeepMind (딥마인드)"],
-            answer: 3,
-            explanation: "구글 딥마인드는 알파고뿐만 아니라 단백질 구조를 예측하는 '알파폴드' 등을 개발한 AI 연구소입니다."
-        },
-        {
-            section: "2구간 : 밈 & 최신 기술",
-            question: "Q8. 벽 건너편 대화 상대가 사람인지 AI인지 구별하지 못하면 '이 AI는 지능이 있다'고 인정하는 유명한 테스트는?",
-            options: ["1) 페르미 테스트", "2) 튜링 테스트", "3) 스피드 테스트", "4) IQ 테스트"],
-            answer: 1,
-            explanation: "컴퓨터 과학의 아버지 '앨런 튜링'이 1950년에 제안한 인공지능 판별 시험입니다."
-        },
-        {
-            section: "2구간 : 밈 & 최신 기술",
-            question: "Q9. 교묘하거나 우회적인 질문을 던져 AI에 설정된 윤리적 제한이나 보안 가이드라인을 뚫고 금지된 답변을 받아내는 공격 행위는?",
-            options: ["1) 오버클럭 (Overclocking)", "2) 디소스 (Desourcing)", "3) 탈옥 (Jailbreaking)", "4) 스크래핑 (Scraping)"],
-            answer: 2,
-            explanation: "스마트폰 보안 제한을 해제하는 '탈옥'에서 온 용어로, 교묘한 질문으로 AI 보안 제한을 푸는 행위입니다."
-        },
-        {
-            section: "2구간 : 밈 & 최신 기술",
-            question: "Q10. AI가 글을 읽고 이해할 때 잘라서 처리하는 '최소한의 글자 조각 단위'이자 사용 요금의 기준이 되는 용어는?",
-            options: ["1) 픽셀", "2) 토큰", "3) 바이트", "4) 코드"],
-            answer: 1,
-            explanation: "AI는 문장을 한 번에 읽지 않고 '토큰(Token)'이라는 작은 글자 조각 단위로 분할하여 처리합니다."
-        },
-        {
-            section: "3구간 : AI 핵심 개념 & 상식",
-            question: "Q11. '인공지능', '머신러닝', '딥러닝'의 올바른 포함 관계(범위)는 무엇일까요?",
-            options: [
-                "1) 머신러닝 ⊂ 딥러닝 ⊂ 인공지능",
-                "2) 인공지능 ⊂ 머신러닝 ⊂ 딥러닝",
-                "3) 딥러닝 ⊂ 머신러닝 ⊂ 인공지능",
-                "4) 셋은 전혀 다른 별개의 개념이다."
-            ],
-            answer: 2,
-            explanation: "인공지능(AI)이라는 가장 커다란 범주 안에 머신러닝이 속하며, 머신러닝의 대표 기법 중 하나가 딥러닝입니다."
-        },
-        {
-            section: "3구간 : AI 핵심 개념 & 상식",
-            question: "Q12. 사람이 직접 정답을 가르쳐주지 않아도, AI 스스로 비슷한 데이터끼리 묶거나 특징을 찾는 학습 방식은?",
-            options: ["1) 지도 학습", "2) 비지도 학습", "3) 강화 학습", "4) 벼락치기 학습"],
-            answer: 1,
-            explanation: "비지도 학습(Unsupervised Learning): 라벨(정답)이 없는 데이터를 AI 혼자 분석해 패턴과 분류를 찾아냅니다."
-        },
-        {
-            section: "3구간 : AI 핵심 개념 & 상식",
-            question: "Q13. ChatGPT에서 'GPT'의 알파벳 약자를 올바르게 풀어쓴 것은 무엇일까요?",
-            options: [
-                "1) General Program Tool",
-                "2) Global Process Technology",
-                "3) Graphic Processing Terminal",
-                "4) Generative Pre-trained Transformer"
-            ],
-            answer: 3,
-            explanation: "Generative(생성하는) - Pre-trained(사전 학습된) - Transformer(트랜스포머 알고리즘)의 약자입니다."
-        },
-        {
-            section: "3구간 : AI 핵심 개념 & 상식",
-            question: "Q14. AI가 학습 데이터에만 너무 과하게 적응해서, 새로운 실전 문제에서는 오히려 오답을 내는 현상은?",
-            options: ["1) 오버피팅 (과적합)", "2) 언더피팅 (미달)", "3) 딥러닝", "4) 다운로드"],
-            answer: 0,
-            explanation: "연습 문제 답만 달달 외워서 조금만 응용되면 다 틀려버리는 상태를 '오버피팅(Overfitting)'이라고 합니다."
-        },
-        {
-            section: "3구간 : AI 핵심 개념 & 상식",
-            question: "Q15. AI 기술로 실제 인물이나 캐릭터의 목소리를 학습시켜 다른 노래를 부르게 만드는 인기 콘텐츠 기술은?",
-            options: [
-                "1) AI 스피치 (AI Speech)",
-                "2) AI 커버 (AI Cover)",
-                "3) AI 리믹스 (AI Remix)",
-                "4) AI 더빙 (AI Dubbing)"
-            ],
-            answer: 1,
-            explanation: "유명인의 목소리 음색을 AI로 학습시켜 새로운 곡을 부르게 만드는 'AI 커버' 기술입니다."
-        },
-        {
-            section: "4구간 : 기업 & SF 서브컬처 & 칩셋",
-            question: "Q16. AI 가속기와 GPU 시장을 휩쓸고 있으며, AI 시대의 핵심 반도체 기업으로 꼽히는 곳은?",
-            options: ["1) Intel", "2) AMD", "3) 엔비디아 (NVIDIA)", "4) Apple"],
-            answer: 2,
-            explanation: "엔비디아(NVIDIA)는 AI 모델 학습에 필수적인 GPU 및 AI 반도체 시장을 주도하고 있습니다."
-        },
-        {
-            section: "4구간 : 기업 & SF 서브컬처 & 칩셋",
-            question: "Q17. ChatGPT를 개발하여 전 세계에 생성형 AI 열풍을 일으킨 기업 이름은?",
-            options: ["1) Google", "2) OpenAI", "3) Meta", "4) Microsoft"],
-            answer: 1,
-            explanation: "OpenAI는 GPT-4, DALL-E, Sora 등 첨단 인공지능 모델을 개발해낸 기업입니다."
-        },
-        {
-            section: "4구간 : 기업 & SF 서브컬처 & 칩셋",
-            question: "Q18. 스마트폰이나 최신 PC에 탑재되어 '인공지능 신경망 연산'만을 전용으로 빠르게 처리하는 칩셋은?",
-            options: ["1) NPU (신경망 처리 장치)", "2) HDD (하드디스크)", "3) Power Unit", "4) Sound Card"],
-            answer: 0,
-            explanation: "NPU(Neural Processing Unit)는 사람 뇌의 신경망 연산 구조를 모방해 AI 연산 효율을 극대화한 장치입니다."
-        },
-        {
-            section: "4구간 : 기업 & SF 서브컬처 & 칩셋",
-            question: "Q19. SF 영화/애니메이션에 등장하는 AI 연결 중 잘못 연결된 것은 무엇일까요?",
-            options: [
-                "1) 영화 <어벤져스> - 울트론 (Ultron)",
-                "2) 영화 <인터스텔라> - 타스 (TARS)",
-                "3) 영화 <매트릭스> - 스카이넷 (Skynet)",
-                "4) 영화 <아이언맨> - 프라이데이 (FRIDAY)"
-            ],
-            answer: 2,
-            explanation: "스카이넷(Skynet)은 영화 <터미네이터> 시리즈의 AI입니다. 매트릭스의 AI 통제체는 '메인프레임' 또는 '아키텍트'입니다."
-        },
-        {
-            section: "4구간 : 기업 & SF 서브컬처 & 칩셋",
-            question: "Q20. 사람처럼 거의 모든 지적 업무를 수행할 수 있는 수준의 '범용 인공지능'을 뜻하는 단어는?",
-            options: ["1) API", "2) ASI", "3) GPU", "4) AGI"],
-            answer: 3,
-            explanation: "AGI(Artificial General Intelligence)는 특정 기능에 국한되지 않고 사람 이상의 통합적 지능을 가진 범용 AI를 뜻합니다."
-        }
-    ];
+    el("mascot").textContent=
+      combo>=2?`🎉 대단해요! ${combo}연속 정답입니다!`:
+      "🎉 정답입니다! 아주 잘하셨어요!";
+  }else{
+    buttons[index].classList.add("wrong");
+    buttons[q.answer].classList.add("correct");
+    combo=0;
+    el("mascot").textContent=
+      "😅 아쉽네요! 아래 해설을 확인해 보세요.";
+  }
 
-    let currentIdx = 0;
-    let score = 0;
-    let combo = 0;
-    let answered = false;
-    let studentId = "";
-    let studentNickname = "";
+  el("score").textContent=`점수: ${score}점`;
+  el("explanation-text").textContent=q.explanation;
+  el("explanation").classList.remove("hidden");
 
-    // DOM Elements
-    const startScreen = document.getElementById('start-screen');
-    const quizScreen = document.getElementById('quiz-screen');
-    const resultScreen = document.getElementById('result-screen');
-    const mainCard = document.getElementById('main-card');
+  el("next-btn").textContent=
+    currentIdx===quizData.length-1?
+    "최종 결과 및 순위 저장 🏆":"다음 문제로 ➜";
 
-    const badge = document.getElementById('badge');
-    const scoreDisplay = document.getElementById('score-display');
-    const progressBar = document.getElementById('progress-bar');
-    const questionTitle = document.getElementById('question-title');
-    const optionsList = document.getElementById('options-list');
-    const explanationCard = document.getElementById('explanation-card');
-    const explanationBody = document.getElementById('explanation-body');
-    const nextBtn = document.getElementById('next-btn');
-    const comboBadge = document.getElementById('combo-badge');
-    const mascotAvatar = document.getElementById('mascot-avatar');
-    const mascotSpeech = document.getElementById('mascot-speech');
+  el("next-btn").classList.remove("hidden");
+}
 
-    function handleStartQuiz(e) {
-        e.preventDefault();
-        studentId = document.getElementById('student-id').value.trim();
-        studentNickname = document.getElementById('student-nickname').value.trim();
+function nextQuestion(){
+  currentIdx++;
+  if(currentIdx<quizData.length) loadQuestion();
+  else finishQuiz();
+}
 
-        if (!studentId || !studentNickname) {
-            alert('학번과 별명을 올바르게 입력해주세요!');
-            return;
-        }
+async function finishQuiz(){
+  showScreen("result-screen");
+  el("progress-bar").style.width="100%";
+  el("player-info").textContent=
+    `학번: ${studentId} | 별명: ${studentNickname}`;
+  el("final-score").textContent=`${score}점`;
 
-        startQuiz();
+  if(score>=220){
+    el("result-comment").textContent=
+      "🏆 전교 AI 마스터! 완벽에 가까운 실력입니다!";
+  }else if(score>=160){
+    el("result-comment").textContent=
+      "🌟 AI 브레인! AI 지식이 정말 풍부하네요!";
+  }else if(score>=100){
+    el("result-comment").textContent=
+      "👍 Good! 기본 개념이 탄탄합니다!";
+  }else{
+    el("result-comment").textContent=
+      "🌱 AI 입문자! 다시 도전해 보세요!";
+  }
+
+  el("saving-status").textContent="⏳ 순위표에 저장하는 중...";
+
+  try{
+    if(!window.saveCloudScore) throw new Error("연결 준비 실패");
+    await window.saveCloudScore(studentNickname,score);
+    el("saving-status").textContent=
+      "✅ 점수가 공동 순위표에 저장되었습니다!";
+    el("saving-status").style.color="#059669";
+  }catch(err){
+    console.error(err);
+    el("saving-status").textContent=
+      "⚠️ 점수 저장 실패. 인터넷 연결 또는 관리자 설정을 확인해주세요.";
+    el("saving-status").style.color="#dc2626";
+  }
+}
+
+function restartQuiz(){
+  showScreen("start-screen");
+}
+
+// 공동 순위표
+async function openRanking(){
+  el("ranking-modal").classList.remove("hidden");
+  el("ranking-list").innerHTML="";
+  el("ranking-status").textContent="⏳ 전교 순위를 불러오는 중...";
+  await refreshRanking();
+}
+
+async function refreshRanking(){
+  if(!window.startCloudRanking){
+    el("ranking-status").textContent=
+      "연결 준비 중입니다. 다시 시도해주세요.";
+    return;
+  }
+
+  await window.startCloudRanking(
+    records=>renderRanking(records),
+    message=>{
+      console.error(message);
+      el("ranking-status").textContent=
+        "⚠️ 순위표 연결 실패. 관리자 설정을 확인해주세요.";
     }
+  );
+}
 
-    function startQuiz() {
-        currentIdx = 0;
-        score = 0;
-        combo = 0;
-        answered = false;
+function renderRanking(records){
+  const list=el("ranking-list");
+  list.innerHTML="";
 
-        startScreen.classList.add('hidden');
-        resultScreen.classList.add('hidden');
-        quizScreen.classList.remove('hidden');
+  el("ranking-status").textContent=
+    `✅ 공동 순위표 연결됨 · 참가자 ${records.length}명`;
 
-        loadQuestion();
-    }
+  if(records.length===0){
+    list.innerHTML=
+      '<p class="text-center text-slate-500 py-10">아직 등록된 점수가 없습니다.<br>첫 번째 도전자가 되어보세요!</p>';
+    return;
+  }
 
-    function loadQuestion() {
-        answered = false;
-        const q = quizData[currentIdx];
+  records.forEach((player,index)=>{
+    const item=document.createElement("div");
+    item.className="rank";
 
-        badge.textContent = q.section;
-        scoreDisplay.textContent = `점수: ${score}점`;
-        progressBar.style.width = `${((currentIdx) / quizData.length) * 100}%`;
-        questionTitle.textContent = q.question;
+    const left=document.createElement("div");
+    const name=document.createElement("div");
+    const subtitle=document.createElement("div");
+    const points=document.createElement("div");
 
-        explanationCard.classList.add('hidden');
-        nextBtn.classList.add('hidden');
-        mascotAvatar.textContent = '🤖';
-        mascotSpeech.textContent = `문제 ${currentIdx + 1}/${quizData.length} : 신중하게 골라보세요!`;
+    name.className="rank-name";
+    const medal=["🥇","🥈","🥉"][index]||`#${index+1}`;
+    name.textContent=`${medal} ${index+1}등 · ${player.nickname}`;
 
-        optionsList.innerHTML = '';
-        q.options.forEach((optText, i) => {
-            const btn = document.createElement('button');
-            btn.className = 'option-button';
-            btn.textContent = optText;
-            btn.onclick = () => selectOption(i);
-            optionsList.appendChild(btn);
-        });
-    }
+    subtitle.className="text-xs text-slate-400 font-bold mt-1";
+    subtitle.textContent="AI 퀴즈 참가자";
 
-    function selectOption(selectedIdx) {
-        if (answered) return;
-        answered = true;
+    points.className="rank-score";
+    points.textContent=`${player.score}점`;
 
-        const q = quizData[currentIdx];
-        const buttons = optionsList.getElementsByClassName('option-button');
+    left.append(name,subtitle);
+    item.append(left,points);
+    list.appendChild(item);
+  });
+}
 
-        for (let btn of buttons) {
-            btn.disabled = true;
-        }
-
-        if (selectedIdx === q.answer) {
-            buttons[selectedIdx].classList.add('correct');
-            mainCard.classList.add('correct-animation');
-            setTimeout(() => mainCard.classList.remove('correct-animation'), 400);
-
-            combo++;
-            let earnedScore = 10;
-            if (combo >= 2) {
-                earnedScore += 5;
-                showComboBadge(`${combo}연속 정답! +15점`);
-                playSound('combo');
-            } else {
-                playSound('correct');
-            }
-
-            score += earnedScore;
-            scoreDisplay.textContent = `점수: ${score}점`;
-
-            mascotAvatar.textContent = '🎉';
-            mascotSpeech.textContent = combo >= 2 ? `대단해요! ${combo}연속 정답입니다!` : '정답입니다! 아주 잘하셨어요!';
-        } else {
-            buttons[selectedIdx].classList.add('wrong');
-            buttons[q.answer].classList.add('correct');
-
-            mainCard.classList.add('shake-animation');
-            setTimeout(() => mainCard.classList.remove('shake-animation'), 500);
-
-            combo = 0;
-            hideComboBadge();
-            playSound('wrong');
-
-            mascotAvatar.textContent = '😅';
-            mascotSpeech.textContent = '아쉽네요! 아래 해설을 확인해 보세요.';
-        }
-
-        explanationBody.textContent = q.explanation;
-        explanationCard.classList.remove('hidden');
-
-        if (currentIdx === quizData.length - 1) {
-            nextBtn.textContent = '최종 결과 및 순위 저장 🏆';
-        } else {
-            nextBtn.textContent = '다음 문제로 ➔';
-        }
-        nextBtn.classList.remove('hidden');
-    }
-
-    function showComboBadge(text) {
-        comboBadge.textContent = `🔥 ${text}`;
-        comboBadge.style.display = 'block';
-    }
-
-    function hideComboBadge() {
-        comboBadge.style.display = 'none';
-    }
-
-    function nextQuestion() {
-        currentIdx++;
-        if (currentIdx < quizData.length) {
-            loadQuestion();
-        } else {
-            showResult();
-        }
-    }
-
-    async function showResult() {
-        quizScreen.classList.add('hidden');
-        resultScreen.classList.remove('hidden');
-        hideComboBadge();
-
-        document.getElementById('player-info').textContent = `학번: ${studentId} | 별명: ${studentNickname}`;
-        document.getElementById('final-score').textContent = `${score}점`;
-
-        const resultComment = document.getElementById('result-comment');
-        if (score >= 220) {
-            resultComment.innerHTML = '🏆 <b>전교 AI 마스터!</b><br>완벽에 가까운 실력입니다. AI중점고의 최고의 인재!';
-        } else if (score >= 160) {
-            resultComment.innerHTML = '🌟 <b>AI 브레인!</b><br>AI 트렌드와 핵심 지식이 아주 풍부하시네요!';
-        } else if (score >= 100) {
-            resultComment.innerHTML = '👍 <b>Good!</b><br>기본 개념이 탄탄합니다. 조금만 더 분발해 볼까요?';
-        } else {
-            resultComment.innerHTML = '🌱 <b>AI 입문자!</b><br>다시 도전해서 상식을 넓혀보세요!';
-        }
-
-        const savingStatus = document.getElementById('saving-status');
-        savingStatus.classList.remove('hidden');
-
-        try {
-            if (!window.saveScoreToCloud) throw new Error('저장 기능을 불러오지 못했습니다.');
-            await window.saveScoreToCloud(studentId, studentNickname, score);
-            savingStatus.textContent = '✅ 순위표에 저장되었습니다!';
-            savingStatus.classList.remove('text-red-600');
-        } catch (err) {
-            console.error(err);
-            savingStatus.textContent = '⚠️ 저장 실패: Supabase 익명 로그인 및 인터넷 연결을 확인해주세요.';
-            savingStatus.classList.add('text-red-600');
-        }
-    }
-
-    function restartQuiz() {
-        resultScreen.classList.add('hidden');
-        startScreen.classList.remove('hidden');
-    }
-
-    async function showLeaderboardModal() {
-        const modal = document.getElementById('leaderboard-modal');
-        const listEl = document.getElementById('leaderboard-list');
-        modal.classList.remove('hidden');
-
-        listEl.innerHTML = `
-            <div class="text-center py-8 text-slate-400 font-bold">
-                <i class="fa-solid fa-circle-notch animate-spin text-3xl mb-2 text-blue-500"></i>
-                <p>전교 순위를 불러오는 중입니다...</p>
-            </div>
-        `;
-
-        if (window.watchLeaderboard) {
-            await window.watchLeaderboard((records) => {
-
-            if (!records || records.length === 0) {
-                listEl.innerHTML = `
-                    <div class="text-center py-8 text-slate-400 font-bold">
-                        <i class="fa-solid fa-trophy text-3xl mb-2 text-slate-300"></i>
-                        <p>아직 등록된 랭킹 기록이 없습니다.<br>첫 번째 도전자가 되어보세요!</p>
-                    </div>
-                `;
-                return;
-            }
-
-            listEl.innerHTML = '';
-            records.forEach((rec, rank) => {
-                const item = document.createElement('div');
-                let rankBadgeClass = 'bg-slate-100 text-slate-600';
-                let rankIcon = `${rank + 1}`;
-
-                if (rank === 0) {
-                    rankBadgeClass = 'bg-amber-100 text-amber-700 border border-amber-300 font-black';
-                    rankIcon = '🥇 1등';
-                } else if (rank === 1) {
-                    rankBadgeClass = 'bg-slate-200 text-slate-700 border border-slate-300 font-black';
-                    rankIcon = '🥈 2등';
-                } else if (rank === 2) {
-                    rankBadgeClass = 'bg-amber-700/10 text-amber-800 border border-amber-600/30 font-black';
-                    rankIcon = '🥉 3등';
-                }
-
-                item.className = 'flex items-center justify-between p-3.5 bg-slate-50 hover:bg-indigo-50/50 rounded-2xl border border-slate-200 transition-all';
-                item.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <span class="px-3 py-1 rounded-xl text-xs ${rankBadgeClass}">
-                            ${rankIcon}
-                        </span>
-                        <div>
-                            <div class="text-sm font-black text-slate-800">${escapeHtml(rec.nickname)}</div>
-                            <div class="text-xs font-bold text-slate-400">AI 퀴즈 참가자</div>
-                        </div>
-                    </div>
-                    <div class="text-lg font-black text-blue-600">${rec.score}점</div>
-                `;
-                listEl.appendChild(item);
-            });
-            }, (message) => {
-                listEl.textContent = message;
-                listEl.className = 'text-center text-red-600 font-bold py-8';
-            });
-        }
-    }
-
-    function hideLeaderboardModal() {
-        document.getElementById('leaderboard-modal').classList.add('hidden');
-        if (window.stopLeaderboardWatch) window.stopLeaderboardWatch();
-    }
-
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
-    }
-
-    window.handleStartQuiz = handleStartQuiz;
-    window.nextQuestion = nextQuestion;
-    window.restartQuiz = restartQuiz;
-    window.showLeaderboardModal = showLeaderboardModal;
-    window.hideLeaderboardModal = hideLeaderboardModal;
+function closeRanking(){
+  el("ranking-modal").classList.add("hidden");
+  if(window.stopCloudRanking) window.stopCloudRanking();
+}
 </script>
 </body>
 </html>
