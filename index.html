@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -57,20 +58,35 @@ button{cursor:pointer;font-family:inherit}
 }
 .mascot{
   padding:15px;background:#f1f5f9;border-radius:17px;
-  text-align:center;font-weight:800;color:#1d4ed8;margin-bottom:20px
+  text-align:center;font-weight:800;color:#1d4ed8;
+  margin-bottom:20px
 }
-.progress{height:13px;background:#e2e8f0;border-radius:20px;overflow:hidden}
+.progress{
+  height:13px;background:#e2e8f0;
+  border-radius:20px;overflow:hidden
+}
 #progress-bar{
-  height:100%;width:0;background:linear-gradient(90deg,#4f46e5,#2563eb);
+  height:100%;width:0;
+  background:linear-gradient(90deg,#4f46e5,#2563eb);
   transition:width .3s
 }
-.timer-bar-container{height:8px;background:#fee2e2;border-radius:10px;overflow:hidden;margin-bottom:15px}
-#timer-bar{height:100%;width:100%;background:#ef4444;transition:width 0.1s linear}
-#explanation{
-  padding:17px;background:#fefce8;border:2px solid #fde047;
-  border-radius:15px;margin-top:17px;line-height:1.7;font-weight:700
+.timer-bar-container{
+  height:8px;background:#fee2e2;
+  border-radius:10px;overflow:hidden;margin-bottom:15px
 }
-#combo{color:#ea580c;font-weight:900;text-align:center}
+#timer-bar{
+  height:100%;width:100%;background:#ef4444;
+  transition:width 0.1s linear
+}
+#explanation{
+  padding:17px;background:#fefce8;
+  border:2px solid #fde047;
+  border-radius:15px;margin-top:17px;
+  line-height:1.7;font-weight:700
+}
+#combo{
+  color:#ea580c;font-weight:900;text-align:center
+}
 .modal{
   position:fixed;inset:0;background:#0f172acc;
   display:flex;align-items:center;justify-content:center;
@@ -81,15 +97,24 @@ button{cursor:pointer;font-family:inherit}
   padding:22px;border-radius:23px;max-height:85vh;
   display:flex;flex-direction:column
 }
-#ranking-list{overflow-y:auto;flex:1;min-height:110px}
+#ranking-list{
+  overflow-y:auto;flex:1;min-height:110px
+}
 .rank{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:12px;background:#f8fafc;border:1px solid #e2e8f0;
+  display:flex;align-items:center;
+  justify-content:space-between;gap:12px;
+  background:#f8fafc;border:1px solid #e2e8f0;
   padding:13px;margin:9px 0;border-radius:14px
 }
 .rank-name{font-weight:800;overflow-wrap:anywhere}
-.rank-score{color:#2563eb;font-size:19px;font-weight:900;white-space:nowrap}
-.status{font-size:13px;text-align:center;margin:10px 0;font-weight:700}
+.rank-score{
+  color:#2563eb;font-size:19px;
+  font-weight:900;white-space:nowrap
+}
+.status{
+  font-size:13px;text-align:center;
+  margin:10px 0;font-weight:700
+}
 @media(max-width:600px){
   .card{padding:22px 17px}
   h1{font-size:24px}
@@ -103,6 +128,7 @@ button{cursor:pointer;font-family:inherit}
 <div id="start-screen" class="text-center">
   <div class="text-6xl mb-3">🤖</div>
   <h1>AI중점고 AI 상식 퀴즈</h1>
+
   <p class="my-5 text-slate-600 font-bold leading-relaxed">
     점심시간 스피드 AI 상식 퀴즈 게임!<br>
     학번과 별명을 입력하고 전교 명예의 전당에 도전하세요!
@@ -111,29 +137,37 @@ button{cursor:pointer;font-family:inherit}
   <form id="start-form" class="text-left space-y-4">
     <div>
       <label class="font-bold">학번 (예: 10101, 20315)</label>
-      <input id="student-id" type="text" inputmode="numeric"
-        pattern="[0-9]{4,6}" maxlength="6" required
-        placeholder="학번 입력">
+      <input id="student-id" type="text"
+        inputmode="numeric" pattern="[0-9]{4,6}"
+        maxlength="6" required placeholder="학번 입력">
     </div>
     <div>
       <label class="font-bold">별명 / 이름</label>
-      <input id="nickname" type="text" maxlength="12" required
+      <input id="nickname" type="text"
+        maxlength="12" required
         placeholder="순위표에 표시할 별명">
     </div>
-    <button class="primary" type="submit">퀴즈 시작하기 🚀</button>
+    <button class="primary" type="submit">
+      퀴즈 시작하기 🚀
+    </button>
   </form>
 
-  <button class="secondary mt-5 w-full" onclick="openRanking()">
+  <button class="secondary mt-5 w-full"
+    onclick="openRanking()">
     🏆 전교 순위표(명예의 전당) 보기
   </button>
 </div>
 
 <div id="quiz-screen" class="hidden">
-  <div class="mascot" id="mascot">🤖 준비되셨나요? 같이 풀어봐요!</div>
+  <div class="mascot" id="mascot">
+    🤖 준비되셨나요? 같이 풀어봐요!
+  </div>
 
   <div class="flex justify-between items-center font-bold text-xs sm:text-sm mb-2 gap-1 whitespace-nowrap">
     <span id="section" class="text-indigo-700">1구간</span>
-    <span id="timer-text" class="text-red-600">⏱️ 남은 시간: 40초</span>
+    <span id="timer-text" class="text-red-600">
+      ⏱️ 남은 시간: 40초
+    </span>
     <span id="score" class="text-blue-700">점수: 0점</span>
   </div>
 
@@ -146,15 +180,18 @@ button{cursor:pointer;font-family:inherit}
   </div>
 
   <div id="combo" class="mb-2"></div>
-  <h2 id="question" class="text-xl font-extrabold mb-5 leading-relaxed"></h2>
+  <h2 id="question"
+    class="text-xl font-extrabold mb-5 leading-relaxed"></h2>
   <div id="options"></div>
 
   <div id="explanation" class="hidden">
     💡 해설 & 단어 풀이
-    <p id="explanation-text" class="mt-2 text-slate-700"></p>
+    <p id="explanation-text"
+      class="mt-2 text-slate-700"></p>
   </div>
 
-  <button id="next-btn" class="primary hidden mt-5" onclick="nextQuestion()">
+  <button id="next-btn" class="primary hidden mt-5"
+    onclick="nextQuestion()">
     다음 문제로 ➜
   </button>
 </div>
@@ -162,43 +199,64 @@ button{cursor:pointer;font-family:inherit}
 <div id="result-screen" class="hidden text-center">
   <div class="text-6xl">🎉</div>
   <h2 class="text-2xl font-black mt-3">퀴즈 종료!</h2>
-  <p id="player-info" class="text-slate-500 font-bold mt-2"></p>
-  <p id="warning-info" class="text-red-500 font-bold text-sm mt-1"></p>
+  <p id="player-info"
+    class="text-slate-500 font-bold mt-2"></p>
+  <p id="warning-info"
+    class="text-red-500 font-bold text-sm mt-1"></p>
   <p class="mt-4 font-bold">당신의 최종 점수는?</p>
-  <div id="final-score" class="text-5xl font-black text-blue-700 my-4"></div>
+  <div id="final-score"
+    class="text-5xl font-black text-blue-700 my-4"></div>
   <p id="result-comment" class="font-bold mb-5"></p>
   <p id="saving-status" class="status">점수 저장 중...</p>
 
-  <button class="primary mb-3" onclick="restartQuiz()">다시 도전하기 (내 계정) 🔄</button>
-  <button class="secondary w-full" onclick="openRanking()">🏆 순위표 확인하기</button>
+  <button class="primary mb-3" onclick="restartQuiz()">
+    다시 도전하기 (내 계정) 🔄
+  </button>
+  <button class="secondary w-full" onclick="openRanking()">
+    🏆 순위표 확인하기
+  </button>
 </div>
 
 </main>
 
 <div id="ranking-modal" class="modal hidden">
   <div class="modal-box">
+
     <div class="flex justify-between items-center border-b pb-3">
       <div>
         <h2 class="text-xl font-black">🏆 전교 명예의 전당</h2>
-        <p class="text-slate-500 text-xs font-bold">실시간 AI 상식 퀴즈 순위</p>
+        <p class="text-slate-500 text-xs font-bold">
+          실시간 AI 상식 퀴즈 순위
+        </p>
       </div>
-      <button onclick="closeRanking()" class="text-2xl text-slate-500">✕</button>
+      <button onclick="closeRanking()"
+        class="text-2xl text-slate-500">✕</button>
     </div>
 
-    <p id="ranking-status" class="status text-blue-600"></p>
+    <p id="ranking-status"
+      class="status text-blue-600"></p>
     <div id="ranking-list"></div>
 
     <div class="border-t mt-4 pt-4 flex justify-between gap-2">
-      <button class="secondary" onclick="refreshRanking()">↻ 새로고침</button>
-      <button class="danger" onclick="resetLeaderboard()">🧹 리셋 (관리자)</button>
-      <button class="secondary" onclick="closeRanking()">닫기</button>
+      <button class="secondary" onclick="refreshRanking()">
+        ↻ 새로고침
+      </button>
+      <button class="danger" id="admin-reset-btn"
+        onclick="resetLeaderboard()">
+        🧹 리셋 (관리자)
+      </button>
+      <button class="secondary" onclick="closeRanking()">
+        닫기
+      </button>
     </div>
+
     <p class="text-center text-xs text-slate-400 mt-3">
       각 기기에서 기록한 최고 점수만 반영됩니다.
     </p>
   </div>
 </div>
 
+<!-- Supabase 연결 및 순위표 관리 -->
 <script type="module">
 import {createClient} from
   "https://esm.sh/@supabase/supabase-js@2.75.0";
@@ -219,7 +277,9 @@ async function getPlayer(){
       if(sessionError) throw sessionError;
       if(current.session?.user) return current.session.user;
 
-      const {data,error} = await supabase.auth.signInAnonymously();
+      const {data,error} =
+        await supabase.auth.signInAnonymously();
+
       if(error) throw error;
       if(!data.user) throw new Error("참가자 연결 실패");
 
@@ -232,6 +292,7 @@ async function getPlayer(){
   return sessionPromise;
 }
 
+// 학생 점수 저장
 window.saveCloudScore = async(nickname,score)=>{
   const user = await getPlayer();
 
@@ -242,8 +303,8 @@ window.saveCloudScore = async(nickname,score)=>{
     .maybeSingle();
 
   if(readError) throw readError;
-  
-  // 이전 점수가 0점 이상이면서 현재 도전점수보다 크면 업데이트 안함
+
+  // 기존 최고 점수보다 낮으면 업데이트하지 않음
   if(old && old.score >= score && old.score >= 0) return;
 
   const {error} = await supabase
@@ -258,47 +319,41 @@ window.saveCloudScore = async(nickname,score)=>{
   if(error) throw error;
 };
 
-// 모든 휴대폰에서 기존 데이터가 영구적으로 보이지 않도록 DB 데이터 덮어쓰기 초기화
-window.resetLeaderboardData = async () => {
+// 관리자 전용 전체 순위표 영구 삭제
+// 비밀번호는 HTML이 아닌 Supabase 서버에서 검증
+window.resetLeaderboardData = async(password)=>{
   await getPlayer();
 
-  // 1차 시도: DELETE 명령 (RLS 삭제 정책이 열려있는 경우 삭제)
-  const { error: deleteError } = await supabase
-    .from("quiz_leaderboard")
-    .delete()
-    .neq("score", -99999);
+  const {data,error} = await supabase.rpc(
+    "admin_reset_quiz_leaderboard",
+    {p_password:password}
+  );
 
-  // 2차 시도: DELETE 실패 시 모든 레코드의 점수를 -99999점 및 리셋 닉네임으로 덮어씀 (RLS 차단 시 완벽 우회)
-  if (deleteError) {
-    const { data: records } = await supabase.from("quiz_leaderboard").select("user_id");
-    if (records && records.length > 0) {
-      for (const r of records) {
-        await supabase
-          .from("quiz_leaderboard")
-          .update({ 
-            nickname: "리셋됨",
-            score: -99999, 
-            updated_at: new Date().toISOString() 
-          })
-          .eq("user_id", r.user_id);
-      }
-    }
+  if(error) throw error;
+
+  if(typeof data !== "number"){
+    throw new Error("데이터베이스 삭제 결과를 확인하지 못했습니다.");
   }
 
-  // 본인 휴대폰의 등록 계정 저장값도 완전 삭제
+  // 해당 기기의 참가자 등록 정보 초기화
   localStorage.removeItem("ai_quiz_registered_user");
+
+  return data;
 };
 
 let channel = null;
 let refreshInterval = null;
 let rankingVersion = 0;
 
+// 순위표 실시간 연결 해제
 window.stopCloudRanking = async()=>{
   rankingVersion++;
+
   if(refreshInterval){
     clearInterval(refreshInterval);
     refreshInterval = null;
   }
+
   if(channel){
     const oldChannel = channel;
     channel = null;
@@ -306,6 +361,7 @@ window.stopCloudRanking = async()=>{
   }
 };
 
+// 모든 기기에서 공동 순위표 조회
 window.startCloudRanking = async(onData,onError)=>{
   await window.stopCloudRanking();
   const version = rankingVersion;
@@ -313,16 +369,16 @@ window.startCloudRanking = async(onData,onError)=>{
   async function fetchRanking(){
     if(version !== rankingVersion) return;
 
-    // 점수가 0점 이상인 활성 참가자의 정산 데이터만 쿼리 (리셋된 -99999점 데이터는 통째로 제외)
     const {data,error} = await supabase
       .from("quiz_leaderboard")
       .select("nickname,score,updated_at")
-      .gte("score", 0) 
+      .gte("score",0)
       .order("score",{ascending:false})
       .order("updated_at",{ascending:true})
       .limit(1000);
 
     if(version !== rankingVersion) return;
+
     if(error) onError(error.message);
     else onData(data||[]);
   }
@@ -343,13 +399,16 @@ window.startCloudRanking = async(onData,onError)=>{
       },()=>fetchRanking())
       .subscribe();
 
+    // 10초마다 데이터베이스 재조회
     refreshInterval = setInterval(fetchRanking,10000);
+
   }catch(err){
     if(version===rankingVersion) onError(err.message);
   }
 };
 </script>
 
+<!-- 퀴즈 문제 및 게임 동작 -->
 <script>
 const quizData=[
 {
@@ -383,8 +442,8 @@ const quizData=[
 {
  section:"1구간 : 기본 개념",
  question:"Q5. 웹사이트의 정보를 자동 프로그램으로 수집하는 행위는?",
- options:["1) 데이터 인코딩","2) 데이터 크롤링 / 스크래핑","3) 업로드","4) 백업"],
- answer:1,
+ options:["1) 데이터 크롤링 / 스크래핑","2) 데이터베이스","3) 파싱","4) 소스코드"],
+ answer:0,
  explanation:"크롤링과 스크래핑은 웹에서 정보를 자동으로 탐색하거나 추출하는 기술입니다."
 },
 {
@@ -411,7 +470,7 @@ const quizData=[
 {
  section:"2구간 : 밈 & 최신 기술",
  question:"Q9. 우회적인 질문으로 AI의 안전 제한을 무력화하려는 공격 행위는?",
- options:["1) 오버클럭","2) 디소스","3) 탈옥 (Jailbreaking)","4) 스크래핑"],
+ options:["1) 오버클럭","2) 디도스","3) 탈옥 (Jailbreaking)","4) 스크래핑"],
  answer:2,
  explanation:"AI 탈옥은 우회적인 입력으로 모델의 안전 제한을 회피하려는 시도입니다."
 },
@@ -516,36 +575,48 @@ let answered=false;
 let studentId="";
 let studentNickname="";
 
-const QUESTION_TIME = 40;
-let timerInterval = null;
-let timeLeft = QUESTION_TIME;
+const QUESTION_TIME=40;
+let timerInterval=null;
+let timeLeft=QUESTION_TIME;
 
-let leaveCount = 0;
-let isQuizActive = false;
+let leaveCount=0;
+let isQuizActive=false;
 
 const el=id=>document.getElementById(id);
 
-window.addEventListener("DOMContentLoaded", () => {
-  const savedUser = localStorage.getItem("ai_quiz_registered_user");
-  if (savedUser) {
-    const userData = JSON.parse(savedUser);
-    el("student-id").value = userData.studentId;
-    el("nickname").value = userData.nickname;
-    el("student-id").readOnly = true;
-    el("student-id").classList.add("bg-slate-100", "cursor-not-allowed");
+// 기존 참가자 정보 유지
+window.addEventListener("DOMContentLoaded",()=>{
+  const savedUser=localStorage.getItem("ai_quiz_registered_user");
+
+  if(savedUser){
+    try{
+      const userData=JSON.parse(savedUser);
+
+      el("student-id").value=userData.studentId;
+      el("nickname").value=userData.nickname;
+      el("student-id").readOnly=true;
+      el("student-id").classList.add(
+        "bg-slate-100","cursor-not-allowed"
+      );
+    }catch(e){
+      localStorage.removeItem("ai_quiz_registered_user");
+    }
   }
 });
 
-document.addEventListener("visibilitychange", () => {
-  if (!isQuizActive || answered) return;
+// 화면 이탈 감지
+document.addEventListener("visibilitychange",()=>{
+  if(!isQuizActive || answered) return;
 
-  if (document.hidden) {
+  if(document.hidden){
     leaveCount++;
-    if (leaveCount === 1) {
+
+    if(leaveCount===1){
       alert("⚠️ [경고] 퀴즈 진행 중 화면을 이탈하셨습니다!\n다음 이탈부터는 20점씩 감점 처리됩니다.");
-    } else {
-      score = Math.max(0, score - 20);
-      el("score").textContent = `점수: ${score}점`;
+    }else{
+      score=Math.max(0,score-20);
+      el("score").textContent=`점수: ${score}점`;
+
       alert(`⚠️ [부정행위 감지] 화면 이탈로 20점이 감점되었습니다! (총 이탈 횟수: ${leaveCount}회)`);
     }
   }
@@ -557,32 +628,38 @@ function showScreen(screen){
   });
 }
 
+// 퀴즈 시작
 el("start-form").addEventListener("submit",event=>{
   event.preventDefault();
-  const inputId = el("student-id").value.trim();
-  const inputNickname = el("nickname").value.trim();
+
+  const inputId=el("student-id").value.trim();
+  const inputNickname=el("nickname").value.trim();
 
   if(!inputId || !inputNickname) return;
 
-  const savedUser = localStorage.getItem("ai_quiz_registered_user");
+  const savedUser=localStorage.getItem("ai_quiz_registered_user");
 
-  if(savedUser) {
-    const userData = JSON.parse(savedUser);
-    if(userData.studentId !== inputId || userData.nickname !== inputNickname) {
+  if(savedUser){
+    const userData=JSON.parse(savedUser);
+
+    if(userData.studentId!==inputId ||
+       userData.nickname!==inputNickname){
+
       alert(`⚠️ 이 기기는 이미 [학번: ${userData.studentId} / 별명: ${userData.nickname}] 계정으로 등록되어 있습니다.\n한 기기에서 다른 계정으로 참가할 수 없습니다.`);
-      el("student-id").value = userData.studentId;
-      el("nickname").value = userData.nickname;
+
+      el("student-id").value=userData.studentId;
+      el("nickname").value=userData.nickname;
       return;
     }
-  } else {
-    localStorage.setItem("ai_quiz_registered_user", JSON.stringify({
-      studentId: inputId,
-      nickname: inputNickname
+  }else{
+    localStorage.setItem("ai_quiz_registered_user",JSON.stringify({
+      studentId:inputId,
+      nickname:inputNickname
     }));
   }
 
-  studentId = inputId;
-  studentNickname = inputNickname;
+  studentId=inputId;
+  studentNickname=inputNickname;
 
   currentIdx=0;
   score=0;
@@ -595,56 +672,68 @@ el("start-form").addEventListener("submit",event=>{
   loadQuestion();
 });
 
+// 문제 타이머
 function startTimer(){
   clearInterval(timerInterval);
-  timeLeft = QUESTION_TIME;
+  timeLeft=QUESTION_TIME;
   updateTimerUI();
 
-  timerInterval = setInterval(() => {
+  timerInterval=setInterval(()=>{
     timeLeft--;
     updateTimerUI();
 
-    if(timeLeft <= 0){
+    if(timeLeft<=0){
       clearInterval(timerInterval);
       handleTimeOut();
     }
-  }, 1000);
+  },1000);
 }
 
 function updateTimerUI(){
-  el("timer-text").textContent = `⏱️ 남은 시간: ${timeLeft}초`;
-  const percentage = (timeLeft / QUESTION_TIME) * 100;
-  el("timer-bar").style.width = `${percentage}%`;
+  el("timer-text").textContent=`⏱️ 남은 시간: ${timeLeft}초`;
+  el("timer-bar").style.width=
+    `${(timeLeft/QUESTION_TIME)*100}%`;
 }
 
+// 시간 초과
 function handleTimeOut(){
   if(answered) return;
-  answered = true;
 
-  const q = quizData[currentIdx];
-  const buttons = Array.from(el("options").children);
-  buttons.forEach(button => button.disabled = true);
+  answered=true;
+
+  const q=quizData[currentIdx];
+  const buttons=Array.from(el("options").children);
+
+  buttons.forEach(button=>button.disabled=true);
   buttons[q.answer].classList.add("correct");
 
-  combo = 0;
-  el("mascot").textContent = "⏰ 제한시간 초과! 정답을 보시고 해설을 확인해보세요.";
-  el("explanation-text").textContent = q.explanation;
+  combo=0;
+
+  el("mascot").textContent=
+    "⏰ 제한시간 초과! 정답을 보시고 해설을 확인해보세요.";
+
+  el("explanation-text").textContent=q.explanation;
   el("explanation").classList.remove("hidden");
 
-  el("next-btn").textContent =
-    currentIdx === quizData.length - 1 ?
-    "최종 결과 및 순위 저장 🏆" : "다음 문제로 ➜";
+  el("next-btn").textContent=
+    currentIdx===quizData.length-1?
+    "최종 결과 및 순위 저장 🏆":"다음 문제로 ➜";
+
   el("next-btn").classList.remove("hidden");
 }
 
+// 문제 표시
 function loadQuestion(){
   answered=false;
+
   const q=quizData[currentIdx];
 
   el("section").textContent=q.section;
   el("score").textContent=`점수: ${score}점`;
+
   el("progress-bar").style.width=
     `${currentIdx/quizData.length*100}%`;
+
   el("question").textContent=q.question;
   el("mascot").textContent=
     `🤖 문제 ${currentIdx+1}/${quizData.length} : 신중하게 골라보세요!`;
@@ -656,22 +745,27 @@ function loadQuestion(){
 
   q.options.forEach((option,index)=>{
     const button=document.createElement("button");
+
     button.className="option";
     button.textContent=option;
     button.onclick=()=>chooseAnswer(index);
+
     el("options").appendChild(button);
   });
 
   startTimer();
 }
 
+// 정답 선택 및 점수 계산
 function chooseAnswer(index){
   if(answered) return;
+
   answered=true;
   clearInterval(timerInterval);
 
   const q=quizData[currentIdx];
   const buttons=Array.from(el("options").children);
+
   buttons.forEach(button=>button.disabled=true);
 
   if(index===q.answer){
@@ -682,16 +776,21 @@ function chooseAnswer(index){
     score+=earned;
 
     if(combo>=2){
-      el("combo").textContent=`🔥 ${combo}연속 정답! +15점`;
+      el("combo").textContent=
+        `🔥 ${combo}연속 정답! +15점`;
     }
 
     el("mascot").textContent=
-      combo>=2?`🎉 대단해요! ${combo}연속 정답입니다!`:
+      combo>=2?
+      `🎉 대단해요! ${combo}연속 정답입니다!`:
       "🎉 정답입니다! 아주 잘하셨어요!";
+
   }else{
     buttons[index].classList.add("wrong");
     buttons[q.answer].classList.add("correct");
+
     combo=0;
+
     el("mascot").textContent=
       "😅 아쉽네요! 아래 해설을 확인해 보세요.";
   }
@@ -709,23 +808,30 @@ function chooseAnswer(index){
 
 function nextQuestion(){
   currentIdx++;
-  if(currentIdx<quizData.length) loadQuestion();
-  else finishQuiz();
+
+  if(currentIdx<quizData.length){
+    loadQuestion();
+  }else{
+    finishQuiz();
+  }
 }
 
+// 최종 결과 및 클라우드 저장
 async function finishQuiz(){
-  isQuizActive = false;
+  isQuizActive=false;
   clearInterval(timerInterval);
+
   showScreen("result-screen");
 
   el("progress-bar").style.width="100%";
   el("player-info").textContent=
     `학번: ${studentId} | 별명: ${studentNickname}`;
-  
-  if (leaveCount > 1) {
-    el("warning-info").textContent = `⚠️ 총 화면 이탈 횟수: ${leaveCount}회 (감점 반영됨)`;
-  } else {
-    el("warning-info").textContent = "";
+
+  if(leaveCount>1){
+    el("warning-info").textContent=
+      `⚠️ 총 화면 이탈 횟수: ${leaveCount}회 (감점 반영됨)`;
+  }else{
+    el("warning-info").textContent="";
   }
 
   el("final-score").textContent=`${score}점`;
@@ -744,16 +850,23 @@ async function finishQuiz(){
       "🌱 AI 입문자! 다시 도전해 보세요!";
   }
 
-  el("saving-status").textContent="⏳ 순위표에 저장하는 중...";
+  el("saving-status").textContent=
+    "⏳ 순위표에 저장하는 중...";
 
   try{
-    if(!window.saveCloudScore) throw new Error("연결 준비 실패");
+    if(!window.saveCloudScore){
+      throw new Error("연결 준비 실패");
+    }
+
     await window.saveCloudScore(studentNickname,score);
+
     el("saving-status").textContent=
       "✅ 점수가 공동 순위표에 저장되었습니다!";
     el("saving-status").style.color="#059669";
+
   }catch(err){
     console.error(err);
+
     el("saving-status").textContent=
       "⚠️ 점수 저장 실패. 인터넷 연결 또는 관리자 설정을 확인해주세요.";
     el("saving-status").style.color="#dc2626";
@@ -764,13 +877,17 @@ function restartQuiz(){
   showScreen("start-screen");
 }
 
+// 순위표 열기
 async function openRanking(){
   el("ranking-modal").classList.remove("hidden");
   el("ranking-list").innerHTML="";
-  el("ranking-status").textContent="⏳ 전교 순위를 불러오는 중...";
+  el("ranking-status").textContent=
+    "⏳ 전교 순위를 불러오는 중...";
+
   await refreshRanking();
 }
 
+// 최신 순위표 불러오기
 async function refreshRanking(){
   if(!window.startCloudRanking){
     el("ranking-status").textContent=
@@ -788,6 +905,7 @@ async function refreshRanking(){
   );
 }
 
+// 순위표 화면 렌더링
 function renderRanking(records){
   const list=el("ranking-list");
   list.innerHTML="";
@@ -811,10 +929,14 @@ function renderRanking(records){
     const points=document.createElement("div");
 
     name.className="rank-name";
-    const medal=["🥇","🥈","🥉"][index]||`#${index+1}`;
-    name.textContent=`${medal} ${index+1}등 · ${player.nickname}`;
 
-    subtitle.className="text-xs text-slate-400 font-bold mt-1";
+    const medal=["🥇","🥈","🥉"][index]||`#${index+1}`;
+
+    name.textContent=
+      `${medal} ${index+1}등 · ${player.nickname}`;
+
+    subtitle.className=
+      "text-xs text-slate-400 font-bold mt-1";
     subtitle.textContent="AI 퀴즈 참가자";
 
     points.className="rank-score";
@@ -828,34 +950,89 @@ function renderRanking(records){
 
 function closeRanking(){
   el("ranking-modal").classList.add("hidden");
-  if(window.stopCloudRanking) window.stopCloudRanking();
+
+  if(window.stopCloudRanking){
+    window.stopCloudRanking();
+  }
 }
 
+// =====================================
+// 관리자 순위표 영구 초기화
+// =====================================
+
+let resetInProgress=false;
+
 async function resetLeaderboard(){
-  const password = prompt("🔑 관리자 비밀번호를 입력하세요:");
-  if(password === null) return;
+  if(resetInProgress) return;
 
-  if(password !== "1800"){
-    alert("❌ 비밀번호가 올바르지 않습니다.");
-    return;
-  }
+  const password=prompt(
+    "🔑 관리자 비밀번호를 입력하세요:"
+  );
 
-  if(confirm("⚠️ 정말로 전교 명예의 전당 점수를 모두 리셋하시겠습니까?\n이 작업은 취소할 수 없습니다.")){
-    try {
-      el("ranking-status").textContent = "⏳ 데이터 초기화 중...";
-      await window.resetLeaderboardData();
-      alert("✅ 모든 기기에서 이전 기록이 삭제되고 초기화되었습니다!");
-      
-      el("student-id").value = "";
-      el("nickname").value = "";
-      el("student-id").readOnly = false;
-      el("student-id").classList.remove("bg-slate-100", "cursor-not-allowed");
-      
-      await refreshRanking();
-    } catch(err) {
-      console.error(err);
-      alert("⚠️ 리셋 과정 중 오류가 발생했습니다.");
+  if(password===null || !password.trim()) return;
+
+  const confirmed=confirm(
+    "⚠️ 정말로 전교 명예의 전당 기록을 모두 삭제하시겠습니까?\n\n"+
+    "Supabase 데이터베이스에 저장된 모든 참가자의 기존 점수가 영구 삭제됩니다.\n"+
+    "모든 휴대폰에서 이전 순위가 사라집니다.\n\n"+
+    "이 작업은 취소할 수 없습니다."
+  );
+
+  if(!confirmed) return;
+
+  resetInProgress=true;
+
+  const resetButton=el("admin-reset-btn");
+  resetButton.disabled=true;
+  resetButton.textContent="⏳ 삭제 중...";
+
+  try{
+    if(!window.resetLeaderboardData){
+      throw new Error("초기화 기능이 아직 준비되지 않았습니다.");
     }
+
+    el("ranking-status").textContent=
+      "⏳ Supabase 데이터베이스 기록 삭제 중...";
+
+    // 서버에서 관리자 비밀번호 확인 후 전체 DELETE
+    const deletedCount=
+      await window.resetLeaderboardData(password);
+
+    // 현재 기기의 입력값도 초기화
+    el("student-id").value="";
+    el("nickname").value="";
+    el("student-id").readOnly=false;
+
+    el("student-id").classList.remove(
+      "bg-slate-100",
+      "cursor-not-allowed"
+    );
+
+    // 삭제 완료 후 서버에서 순위표 재조회
+    await refreshRanking();
+
+    alert(
+      "✅ 순위표 초기화 완료!\n\n"+
+      `서버에서 삭제한 기존 기록: ${deletedCount}건\n\n`+
+      "다른 기기에서도 새로고침하면 빈 순위표가 표시됩니다."
+    );
+
+  }catch(err){
+    console.error("관리자 초기화 실패:",err);
+
+    el("ranking-status").textContent=
+      "⚠️ 순위표 초기화 실패";
+
+    alert(
+      "❌ 데이터베이스 기록을 삭제하지 못했습니다.\n\n"+
+      "관리자 비밀번호 및 서버 연결을 확인하세요.\n\n"+
+      "오류: "+err.message
+    );
+
+  }finally{
+    resetInProgress=false;
+    resetButton.disabled=false;
+    resetButton.textContent="🧹 리셋 (관리자)";
   }
 }
 </script>
