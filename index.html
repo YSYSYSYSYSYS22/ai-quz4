@@ -37,6 +37,11 @@ button{cursor:pointer;font-family:inherit}
   background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;
   padding:12px 18px;border-radius:12px;font-weight:800
 }
+.danger{
+  background:#fef2f2;color:#dc2626;border:1px solid #fecaca;
+  padding:12px 18px;border-radius:12px;font-weight:800
+}
+.danger:hover{background:#fee2e2}
 .option{
   display:block;width:100%;text-align:left;padding:16px;
   background:#f8fafc;border:2px solid #cbd5e1;
@@ -126,7 +131,7 @@ button{cursor:pointer;font-family:inherit}
 <div id="quiz-screen" class="hidden">
   <div class="mascot" id="mascot">🤖 준비되셨나요? 같이 풀어봐요!</div>
 
-  <div class="flex justify-between font-extrabold mb-2">
+  <div class="flex justify-between items-center font-bold text-xs sm:text-sm mb-2 gap-1 whitespace-nowrap">
     <span id="section" class="text-indigo-700">1구간</span>
     <span id="timer-text" class="text-red-600">⏱️ 남은 시간: 40초</span>
     <span id="score" class="text-blue-700">점수: 0점</span>
@@ -185,6 +190,7 @@ button{cursor:pointer;font-family:inherit}
 
     <div class="border-t mt-4 pt-4 flex justify-between gap-2">
       <button class="secondary" onclick="refreshRanking()">↻ 새로고침</button>
+      <button class="danger" onclick="resetLeaderboard()">🧹 리셋 (관리자)</button>
       <button class="secondary" onclick="closeRanking()">닫기</button>
     </div>
     <p class="text-center text-xs text-slate-400 mt-3">
@@ -248,6 +254,16 @@ window.saveCloudScore = async(nickname,score)=>{
     },{onConflict:"user_id"});
 
   if(error) throw error;
+};
+
+// 관리자 리셋 함수
+window.resetLeaderboardData = async () => {
+  const { error } = await supabase
+    .from("quiz_leaderboard")
+    .delete()
+    .neq("score", -1); // 모든 레코드 삭제
+
+  if (error) throw error;
 };
 
 let channel = null;
@@ -475,12 +491,10 @@ let answered=false;
 let studentId="";
 let studentNickname="";
 
-// 타이머 변수 (제한시간 40초로 변경)
 const QUESTION_TIME = 40;
 let timerInterval = null;
 let timeLeft = QUESTION_TIME;
 
-// 이탈 감지 변수
 let leaveCount = 0;
 let isQuizActive = false;
 
@@ -790,6 +804,29 @@ function renderRanking(records){
 function closeRanking(){
   el("ranking-modal").classList.add("hidden");
   if(window.stopCloudRanking) window.stopCloudRanking();
+}
+
+// 관리자 리셋 처리 함수
+async function resetLeaderboard(){
+  const password = prompt("🔑 관리자 비밀번호를 입력하세요:");
+  if(password === null) return;
+
+  if(password !== "1800"){
+    alert("❌ 비밀번호가 올바르지 않습니다.");
+    return;
+  }
+
+  if(confirm("⚠️ 정말로 전교 명예의 전당 점수를 모두 리셋하시겠습니까?\n이 작업은 취소할 수 없습니다.")){
+    try {
+      el("ranking-status").textContent = "⏳ 데이터 삭제 중...";
+      await window.resetLeaderboardData();
+      alert("✅ 순위표가 성공적으로 리셋되었습니다!");
+      await refreshRanking();
+    } catch(err) {
+      console.error(err);
+      alert("⚠️ 리셋 실패. Supabase 권한(RLS Delete Policy)을 확인해주세요.");
+    }
+  }
 }
 </script>
 </body>
