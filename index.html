@@ -232,21 +232,19 @@ async function getPlayer(){
   return sessionPromise;
 }
 
-// 점수 저장 시 리셋 타임스탬프 체크
 window.saveCloudScore = async(nickname,score)=>{
   const user = await getPlayer();
-  const resetTime = localStorage.getItem("ai_quiz_reset_timestamp") || "1970-01-01T00:00:00.000Z";
 
   const {data:old,error:readError} = await supabase
     .from("quiz_leaderboard")
-    .select("score, updated_at")
+    .select("score")
     .eq("user_id",user.id)
     .maybeSingle();
 
   if(readError) throw readError;
   
-  // 리셋 시점보다 이전 데이터이거나 기존 점수가 높은 경우 패스
-  if(old && old.updated_at > resetTime && old.score >= score) return;
+  // 이전 점수가 0점 이상이면서 현재 도전점수보다 크면 업데이트 안함
+  if(old && old.score >= score && old.score >= 0) return;
 
   const {error} = await supabase
     .from("quiz_leaderboard")
@@ -260,26 +258,34 @@ window.saveCloudScore = async(nickname,score)=>{
   if(error) throw error;
 };
 
-// 강제 리셋 처리 함수 (DB 전체 항목의 점수를 -999점으로 바꿈 + 리셋 시간 저장)
+// 모든 휴대폰에서 기존 데이터가 영구적으로 보이지 않도록 DB 데이터 덮어쓰기 초기화
 window.resetLeaderboardData = async () => {
   await getPlayer();
-  const nowIso = new Date().toISOString();
-  
-  // 1. 리셋 버튼 누른 시각 저장 (이 시각 이전 데이터는 표시 제외)
-  localStorage.setItem("ai_quiz_reset_timestamp", nowIso);
 
-  // 2. 현재 저장된 모든 데이터의 점수를 -999로 처리
-  const { data: records } = await supabase.from("quiz_leaderboard").select("user_id");
-  if (records && records.length > 0) {
-    for (const r of records) {
-      await supabase
-        .from("quiz_leaderboard")
-        .update({ score: -999, updated_at: nowIso })
-        .eq("user_id", r.user_id);
+  // 1차 시도: DELETE 명령 (RLS 삭제 정책이 열려있는 경우 삭제)
+  const { error: deleteError } = await supabase
+    .from("quiz_leaderboard")
+    .delete()
+    .neq("score", -99999);
+
+  // 2차 시도: DELETE 실패 시 모든 레코드의 점수를 -99999점 및 리셋 닉네임으로 덮어씀 (RLS 차단 시 완벽 우회)
+  if (deleteError) {
+    const { data: records } = await supabase.from("quiz_leaderboard").select("user_id");
+    if (records && records.length > 0) {
+      for (const r of records) {
+        await supabase
+          .from("quiz_leaderboard")
+          .update({ 
+            nickname: "리셋됨",
+            score: -99999, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq("user_id", r.user_id);
+      }
     }
   }
 
-  // 3. 내 기기의 로그인 저장 정보 삭제
+  // 본인 휴대폰의 등록 계정 저장값도 완전 삭제
   localStorage.removeItem("ai_quiz_registered_user");
 };
 
@@ -307,13 +313,11 @@ window.startCloudRanking = async(onData,onError)=>{
   async function fetchRanking(){
     if(version !== rankingVersion) return;
 
-    const resetTime = localStorage.getItem("ai_quiz_reset_timestamp") || "1970-01-01T00:00:00.000Z";
-
+    // 점수가 0점 이상인 활성 참가자의 정산 데이터만 쿼리 (리셋된 -99999점 데이터는 통째로 제외)
     const {data,error} = await supabase
       .from("quiz_leaderboard")
       .select("nickname,score,updated_at")
-      .gte("score", 0)
-      .gt("updated_at", resetTime) // 리셋 시점 이후에 새로 입력된 점수만 표시
+      .gte("score", 0) 
       .order("score",{ascending:false})
       .order("updated_at",{ascending:true})
       .limit(1000);
@@ -840,7 +844,7 @@ async function resetLeaderboard(){
     try {
       el("ranking-status").textContent = "⏳ 데이터 초기화 중...";
       await window.resetLeaderboardData();
-      alert("✅ 순위표가 깨끗하게 리셋되었습니다! 오늘 참가하는 첫 번째 도전자가 되어보세요!");
+      alert("✅ 모든 기기에서 이전 기록이 삭제되고 초기화되었습니다!");
       
       el("student-id").value = "";
       el("nickname").value = "";
