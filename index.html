@@ -59,6 +59,8 @@ button{cursor:pointer;font-family:inherit}
   height:100%;width:0;background:linear-gradient(90deg,#4f46e5,#2563eb);
   transition:width .3s
 }
+.timer-bar-container{height:8px;background:#fee2e2;border-radius:10px;overflow:hidden;margin-bottom:15px}
+#timer-bar{height:100%;width:100%;background:#ef4444;transition:width 0.1s linear}
 #explanation{
   padding:17px;background:#fefce8;border:2px solid #fde047;
   border-radius:15px;margin-top:17px;line-height:1.7;font-weight:700
@@ -124,9 +126,14 @@ button{cursor:pointer;font-family:inherit}
 <div id="quiz-screen" class="hidden">
   <div class="mascot" id="mascot">🤖 준비되셨나요? 같이 풀어봐요!</div>
 
-  <div class="flex justify-between font-extrabold mb-3">
+  <div class="flex justify-between font-extrabold mb-2">
     <span id="section" class="text-indigo-700">1구간</span>
+    <span id="timer-text" class="text-red-600">⏱️ 남은 시간: 40초</span>
     <span id="score" class="text-blue-700">점수: 0점</span>
+  </div>
+
+  <div class="timer-bar-container">
+    <div id="timer-bar"></div>
   </div>
 
   <div class="progress mb-5">
@@ -151,8 +158,9 @@ button{cursor:pointer;font-family:inherit}
   <div class="text-6xl">🎉</div>
   <h2 class="text-2xl font-black mt-3">퀴즈 종료!</h2>
   <p id="player-info" class="text-slate-500 font-bold mt-2"></p>
-  <p class="mt-6 font-bold">당신의 최종 점수는?</p>
-  <div id="final-score" class="text-5xl font-black text-blue-700 my-5"></div>
+  <p id="warning-info" class="text-red-500 font-bold text-sm mt-1"></p>
+  <p class="mt-4 font-bold">당신의 최종 점수는?</p>
+  <div id="final-score" class="text-5xl font-black text-blue-700 my-4"></div>
   <p id="result-comment" class="font-bold mb-5"></p>
   <p id="saving-status" class="status">점수 저장 중...</p>
 
@@ -467,18 +475,40 @@ let answered=false;
 let studentId="";
 let studentNickname="";
 
+// 타이머 변수 (제한시간 40초로 변경)
+const QUESTION_TIME = 40;
+let timerInterval = null;
+let timeLeft = QUESTION_TIME;
+
+// 이탈 감지 변수
+let leaveCount = 0;
+let isQuizActive = false;
+
 const el=id=>document.getElementById(id);
 
-// 접속 시 이 기기에서 등록된 학생 정보가 있는지 확인 및 자동 입력
 window.addEventListener("DOMContentLoaded", () => {
   const savedUser = localStorage.getItem("ai_quiz_registered_user");
   if (savedUser) {
     const userData = JSON.parse(savedUser);
     el("student-id").value = userData.studentId;
     el("nickname").value = userData.nickname;
-    // 학번 입력란을 읽기 전용으로 설정하여 계정 변경 차단
     el("student-id").readOnly = true;
     el("student-id").classList.add("bg-slate-100", "cursor-not-allowed");
+  }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!isQuizActive || answered) return;
+
+  if (document.hidden) {
+    leaveCount++;
+    if (leaveCount === 1) {
+      alert("⚠️ [경고] 퀴즈 진행 중 화면을 이탈하셨습니다!\n다음 이탈부터는 20점씩 감점 처리됩니다.");
+    } else {
+      score = Math.max(0, score - 20);
+      el("score").textContent = `점수: ${score}점`;
+      alert(`⚠️ [부정행위 감지] 화면 이탈로 20점이 감점되었습니다! (총 이탈 횟수: ${leaveCount}회)`);
+    }
   }
 });
 
@@ -499,7 +529,6 @@ el("start-form").addEventListener("submit",event=>{
 
   if(savedUser) {
     const userData = JSON.parse(savedUser);
-    // 동일 핸드폰에서 다른 학번/이름으로 로그인을 시도할 경우 경고 및 차단
     if(userData.studentId !== inputId || userData.nickname !== inputNickname) {
       alert(`⚠️ 이 기기는 이미 [학번: ${userData.studentId} / 별명: ${userData.nickname}] 계정으로 등록되어 있습니다.\n한 기기에서 다른 계정으로 참가할 수 없습니다.`);
       el("student-id").value = userData.studentId;
@@ -507,7 +536,6 @@ el("start-form").addEventListener("submit",event=>{
       return;
     }
   } else {
-    // 최초 등록 시 로컬스토리지에 기기 귀속 정보 저장
     localStorage.setItem("ai_quiz_registered_user", JSON.stringify({
       studentId: inputId,
       nickname: inputNickname
@@ -520,11 +548,55 @@ el("start-form").addEventListener("submit",event=>{
   currentIdx=0;
   score=0;
   combo=0;
+  leaveCount=0;
   answered=false;
+  isQuizActive=true;
 
   showScreen("quiz-screen");
   loadQuestion();
 });
+
+function startTimer(){
+  clearInterval(timerInterval);
+  timeLeft = QUESTION_TIME;
+  updateTimerUI();
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerUI();
+
+    if(timeLeft <= 0){
+      clearInterval(timerInterval);
+      handleTimeOut();
+    }
+  }, 1000);
+}
+
+function updateTimerUI(){
+  el("timer-text").textContent = `⏱️ 남은 시간: ${timeLeft}초`;
+  const percentage = (timeLeft / QUESTION_TIME) * 100;
+  el("timer-bar").style.width = `${percentage}%`;
+}
+
+function handleTimeOut(){
+  if(answered) return;
+  answered = true;
+
+  const q = quizData[currentIdx];
+  const buttons = Array.from(el("options").children);
+  buttons.forEach(button => button.disabled = true);
+  buttons[q.answer].classList.add("correct");
+
+  combo = 0;
+  el("mascot").textContent = "⏰ 제한시간 초과! 정답을 보시고 해설을 확인해보세요.";
+  el("explanation-text").textContent = q.explanation;
+  el("explanation").classList.remove("hidden");
+
+  el("next-btn").textContent =
+    currentIdx === quizData.length - 1 ?
+    "최종 결과 및 순위 저장 🏆" : "다음 문제로 ➜";
+  el("next-btn").classList.remove("hidden");
+}
 
 function loadQuestion(){
   answered=false;
@@ -550,11 +622,14 @@ function loadQuestion(){
     button.onclick=()=>chooseAnswer(index);
     el("options").appendChild(button);
   });
+
+  startTimer();
 }
 
 function chooseAnswer(index){
   if(answered) return;
   answered=true;
+  clearInterval(timerInterval);
 
   const q=quizData[currentIdx];
   const buttons=Array.from(el("options").children);
@@ -600,10 +675,20 @@ function nextQuestion(){
 }
 
 async function finishQuiz(){
+  isQuizActive = false;
+  clearInterval(timerInterval);
   showScreen("result-screen");
+
   el("progress-bar").style.width="100%";
   el("player-info").textContent=
     `학번: ${studentId} | 별명: ${studentNickname}`;
+  
+  if (leaveCount > 1) {
+    el("warning-info").textContent = `⚠️ 총 화면 이탈 횟수: ${leaveCount}회 (감점 반영됨)`;
+  } else {
+    el("warning-info").textContent = "";
+  }
+
   el("final-score").textContent=`${score}점`;
 
   if(score>=220){
